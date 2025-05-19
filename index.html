@@ -60,6 +60,7 @@
             box-shadow: var(--shadow-md);
             position: relative;
             z-index: 10;
+            order: 1;
         }
 
         .header__actions {
@@ -119,7 +120,7 @@
             box-shadow: var(--shadow-lg);
             position: relative;
             width: 100%;
-            height: calc(57vw + 40px);
+            height: calc(57vw + 40px); 
             max-height: 85vh;
             display: none;
         }
@@ -227,6 +228,7 @@
             padding: 1rem;
             margin-bottom: 1rem;
             box-shadow: var(--shadow-sm);
+            transition: background-color 0.3s ease;
         }
 
         .search-box {
@@ -290,53 +292,10 @@
         }
 
         .filter-button--favorites {
-            flex: 0 0 auto;
+            flex: 0 0 auto !important;
             width: 36px;
-            min-width: 36px;
-            padding: 0.5rem 0;
-        }
-
-        .sport-filters {
-            display: flex;
-            gap: 0.6rem;
-            margin-top: 0.8rem;
-            overflow-x: auto;
-            padding-bottom: 5px;
-            scrollbar-width: none;
-            flex-wrap: wrap;
-        }
-
-        .sport-filters::-webkit-scrollbar {
-            display: none;
-        }
-
-        .sport-button {
-            flex: 0 0 auto;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            color: var(--text-dark);
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            padding: 0;
-        }
-
-        .sport-button:hover {
-            border-color: var(--primary);
-            transform: scale(1.1);
-        }
-
-        .sport-button--active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            transform: scale(1.1);
+            min-width: 36px !important;
+            padding: 0.5rem 0 !important;
         }
 
         .channels-grid {
@@ -356,7 +315,9 @@
             position: relative;
             overflow: hidden;
             box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
             contain: content;
+            will-change: transform, box-shadow;
         }
 
         .channel-card:hover {
@@ -444,6 +405,8 @@
             padding: 0;
             margin-bottom: 1rem;
             box-shadow: var(--shadow-sm);
+            align-self: start;
+            height: auto;
         }
 
         .channel-group__header {
@@ -471,6 +434,8 @@
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 0.8rem;
             padding: 0.8rem;
+            grid-auto-rows: min-content;
+            height: auto !important;
         }
 
         .channel-group__content--single {
@@ -616,36 +581,35 @@
                 padding: 0.8rem;
                 justify-content: center;
             }
+
             .header__actions {
                 flex-direction: row;
                 gap: 15px;
             }
+
             .main-container {
                 padding: 0 0.8rem;
             }
+
             .channels-grid {
                 grid-template-columns: 1fr;
             }
+
             .filter-buttons {
                 flex-wrap: nowrap;
                 gap: 0.6rem;
             }
+
             .filter-button {
                 min-width: auto;
                 flex: 1;
             }
+
             .filter-button--favorites {
                 min-width: 36px !important;
                 flex: 0 0 36px !important;
             }
-            .sport-filters {
-                padding-bottom: 8px;
-            }
-            .sport-button {
-                width: 32px;
-                height: 32px;
-                font-size: 0.9rem;
-            }
+
             .player-controls {
                 flex-wrap: nowrap;
                 gap: 8px;
@@ -653,6 +617,7 @@
                 align-items: center;
                 position: relative;
             }
+
             .channel-info, .channel-number-display {
                 position: static;
                 transform: none;
@@ -666,23 +631,28 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
+
             .channel-info {
                 text-align: left;
                 flex: 1;
             }
+
             .channel-number-display {
                 text-align: right;
                 margin-left: auto;
             }
+
             .control-btn {
                 width: 28px;
                 height: 28px;
                 font-size: 0.9rem;
                 flex-shrink: 0;
             }
+
             .channel-group__content {
                 grid-template-columns: 1fr;
             }
+
             .update-notification {
                 bottom: 120px;
                 left: 15px;
@@ -720,20 +690,6 @@
                 <button class="filter-button" id="filterLive">Directo</button>
                 <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
             </div>
-
-            <div class="sport-filters" id="sportFilters">
-                <button class="sport-button" data-sport="TV Shows" title="TV Shows">📺</button>
-                <button class="sport-button" data-sport="Fútbol" title="Fútbol">⚽</button>
-                <button class="sport-button" data-sport="Baloncesto" title="Baloncesto">🏀</button>
-                <button class="sport-button" data-sport="Tenis" title="Tenis">🎾</button>
-                <button class="sport-button" data-sport="Am. Football" title="Fútbol Americano">🏈</button>
-                <button class="sport-button" data-sport="Boxeo" title="Boxeo">🥊</button>
-                <button class="sport-button" data-sport="MMA" title="MMA">👊</button>
-                <button class="sport-button" data-sport="Motogp" title="MotoGP">🏍️</button>
-                <button class="sport-button" data-sport="Motorsport" title="Motorsport">🏁</button>
-                <button class="sport-button" data-sport="F1" title="F1">🏎️</button>
-                <button class="sport-button" data-sport="Otros" title="Otros deportes">🇪🇸</button>
-            </div>
         </section>
 
         <section class="channels-grid" id="channelsGrid">
@@ -755,7 +711,8 @@
         <div class="modal__content">
             <h3 class="modal__title">Lista de Canales</h3>
             <input type="text" class="modal__input" id="channelListSearch" placeholder="Buscar canales...">
-            <div id="channelListContent" style="max-height: 350px; overflow-y: auto; margin-bottom: 0.8rem;"></div>
+            <div id="channelListContent" style="max-height: 350px; overflow-y: auto; margin-bottom: 0.8rem;">
+            </div>
             <div class="modal__actions">
                 <button class="modal__btn modal__btn--secondary" id="closeChannelListBtn">Cerrar</button>
             </div>
@@ -793,9 +750,12 @@
             }
 
             render(virtualNode) {
-                if (typeof virtualNode === 'string') return document.createTextNode(virtualNode);
+                if (typeof virtualNode === 'string') {
+                    return document.createTextNode(virtualNode);
+                }
 
                 const element = document.createElement(virtualNode.tag);
+
                 for (const [attr, value] of Object.entries(virtualNode.attributes)) {
                     if (attr === 'className') {
                         element.className = value;
@@ -809,6 +769,7 @@
                 for (const child of virtualNode.children) {
                     element.appendChild(this.render(child));
                 }
+
                 return element;
             }
 
@@ -824,6 +785,7 @@
 
                 const patch = {};
                 const allAttrs = new Set([...Object.keys(oldNode.attributes), ...Object.keys(newNode.attributes)]);
+
                 for (const attr of allAttrs) {
                     if (oldNode.attributes[attr] !== newNode.attributes[attr]) {
                         patch[attr] = newNode.attributes[attr];
@@ -838,15 +800,23 @@
                 for (let i = 0; i < maxLen; i++) {
                     childPatches.push(this.diff(oldChildren[i], newChildren[i]));
                 }
+
                 return { node: oldNode, patch, childPatches };
             }
 
             patch(parent, patches, index = 0) {
                 if (!patches) return;
-                if (patches.node === null) return parent.removeChild(parent.childNodes[index]);
-                if (patches.node) return parent.appendChild(this.render(patches.node));
+
+                if (patches.node === null) {
+                    return parent.removeChild(parent.childNodes[index]);
+                }
+
+                if (patches.node) {
+                    return parent.appendChild(this.render(patches.node));
+                }
 
                 const element = parent.childNodes[index];
+
                 for (const [attr, value] of Object.entries(patches.patch || {})) {
                     if (attr === 'className') {
                         element.className = value;
@@ -873,9 +843,18 @@
                 this.state = {};
             }
 
-            subscribe(observer) { this.observers.push(observer); }
-            unsubscribe(observer) { this.observers = this.observers.filter(obs => obs !== observer); }
-            notify(data) { this.observers.forEach(observer => observer.update(data)); }
+            subscribe(observer) {
+                this.observers.push(observer);
+            }
+
+            unsubscribe(observer) {
+                this.observers = this.observers.filter(obs => obs !== observer);
+            }
+
+            notify(data) {
+                this.observers.forEach(observer => observer.update(data));
+            }
+
             setState(newState) {
                 this.state = { ...this.state, ...newState };
                 this.notify(this.state);
@@ -885,12 +864,13 @@
         class EnhancedStore extends Observable {
             setState(newState) {
                 const toPersist = {};
-                ['favorites', 'isDarkMode', 'currentFilter', 'stickyPlayer', 'usePremium', 'isGrouped', 'baseDomain', 'hiddenChannels', 'autoChannels', 'selectedSports'].forEach(key => {
+                ['favorites', 'isDarkMode', 'currentFilter', 'stickyPlayer', 'usePremium', 'isGrouped', 'baseDomain', 'hiddenChannels', 'autoChannels'].forEach(key => {
                     if (newState[key] !== undefined) {
                         toPersist[key] = newState[key];
                         localStorage.setItem(`tvApp_${key}`, JSON.stringify(newState[key]));
                     }
                 });
+                
                 super.setState(newState);
             }
         }
@@ -904,23 +884,28 @@
 
                 const favoriteIndicator = channel.isFavorite ? '<span style="color: gold; margin-right: 5px;">★</span>' : '';
 
-                card.innerHTML = isGrouped ? `
-                    <div class="channel-header">
-                        <div class="channel-time ${channel.time ? 'channel-time--live' : ''}"></div>
-                        <h3 class="channel-name">${favoriteIndicator}${channel.name}</h3>
-                        <div class="channel-number">${channel.number}</div>
-                    </div>
-                ` : `
-                    <div class="channel-header">
-                        <div class="channel-time ${channel.time ? 'channel-time--live' : ''}">
-                            ${channel.time || 'LIVE'}
+                if (isGrouped) {
+                    card.innerHTML = `
+                        <div class="channel-header">
+                            <div class="channel-time ${channel.time ? 'channel-time--live' : ''}"></div>
+                            <h3 class="channel-name">${favoriteIndicator}${channel.name}</h3>
+                            <div class="channel-number">${channel.number}</div>
                         </div>
-                        <h3 class="channel-name">${favoriteIndicator}${channel.name}</h3>
-                        <div class="channel-number">${channel.number}</div>
-                    </div>
-                    <p class="channel-event">${channel.event}</p>
-                    <div class="channel-sport">${channel.sport}</div>
-                `;
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="channel-header">
+                            <div class="channel-time ${channel.time ? 'channel-time--live' : ''}">
+                                ${channel.time || 'LIVE'}
+                            </div>
+                            <h3 class="channel-name">${favoriteIndicator}${channel.name}</h3>
+                            <div class="channel-number">${channel.number}</div>
+                        </div>
+                        <p class="channel-event">${channel.event}</p>
+                        <div class="channel-sport">${channel.sport}</div>
+                    `;
+                }
+
                 return card;
             }
 
@@ -931,12 +916,38 @@
                 group.dataset.key = groupKey;
 
                 const sport = groupChannels[0]?.sport || 'General';
+                
                 const sportTranslations = {
-                    'Football': 'Fútbol', 'Soccer': 'Fútbol', 'Basketball': 'Baloncesto',
-                    'Tennis': 'Tenis', 'Baseball': 'Béisbol', 'Boxing': 'Boxeo',
-                    'Handball': 'Balonmano', 'Cycling': 'Ciclismo', 'Swimming': 'Natación',
-                    'Athletics': 'Atletismo', 'Darts': 'Dardos'
+                    'Football': 'Fútbol',
+                    'Soccer': 'Fútbol',
+                    'Basketball': 'Baloncesto',
+                    'Tennis': 'Tenis',
+                    'Baseball': 'Béisbol',
+                    'Hockey': 'Hockey',
+                    'Golf': 'Golf',
+                    'Boxing': 'Boxeo',
+                    'MMA': 'Artes Marciales Mixtas',
+                    'Rugby': 'Rugby',
+                    'Cricket': 'Críquet',
+                    'Volleyball': 'Voleibol',
+                    'Handball': 'Balonmano',
+                    'Cycling': 'Ciclismo',
+                    'Formula 1': 'Fórmula 1',
+                    'MotoGP': 'MotoGP',
+                    'Wrestling': 'Lucha Libre',
+                    'Swimming': 'Natación',
+                    'Athletics': 'Atletismo',
+                    'Snooker': 'Snooker',
+                    'Darts': 'Dardos',
+                    'American Football': 'Fútbol Americano',
+                    'Motorsports': 'Deportes de Motor',
+                    'Winter Sports': 'Deportes de Invierno',
+                    'Water Sports': 'Deportes Acuáticos',
+                    'Extreme Sports': 'Deportes Extremos',
+                    'E-Sports': 'Deportes Electrónicos',
+                    'Other Sports': 'Otros Deportes'
                 };
+
                 const translatedSport = sportTranslations[sport] || sport;
 
                 group.innerHTML = `
@@ -951,6 +962,7 @@
                     </div>
                     <div class="channel-group__content ${groupChannels.length === 1 ? 'channel-group__content--single' : ''}"></div>
                 `;
+
                 return group;
             }
         }
@@ -969,13 +981,16 @@
         class FilterStrategy {
             static all = memoize((channels, searchTerm = '') => {
                 let filtered = [...channels];
+                
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     if (/^#?\d+$/.test(term)) {
                         const channelNumber = term.replace('#', '');
                         filtered = filtered.filter(channel => channel.number === channelNumber);
                     } else if (/^\d{1,2}:\d{2}$/.test(term)) {
-                        filtered = filtered.filter(channel => channel.time && channel.time.toLowerCase().includes(term));
+                        filtered = filtered.filter(channel => 
+                            channel.time && channel.time.toLowerCase().includes(term)
+                        );
                     } else {
                         filtered = filtered.filter(channel => 
                             channel.name.toLowerCase().includes(term) || 
@@ -986,6 +1001,7 @@
                         );
                     }
                 }
+                
                 return filtered;
             });
 
@@ -993,19 +1009,26 @@
                 const now = new Date();
                 let filtered = channels.filter(channel => {
                     if (!channel.time) return false;
+                    
                     const [hours, minutes] = channel.time.split(':').map(Number);
                     const eventTime = new Date();
                     eventTime.setHours(hours, minutes, 0, 0);
+                    
                     const diffMinutes = (now - eventTime) / (1000 * 60);
                     return diffMinutes >= -15 && diffMinutes <= 180;
                 });
+
                 return FilterStrategy.all(filtered, searchTerm);
             });
 
             static favorites = memoize((favorites, allChannels, searchTerm = '') => {
                 let filtered = favorites.map(fav => {
                     const matchingChannels = allChannels.filter(c => c.number === fav.number);
-                    if (matchingChannels.length > 0) return matchingChannels;
+                    
+                    if (matchingChannels.length > 0) {
+                        return matchingChannels;
+                    }
+                    
                     return [{
                         name: fav.name,
                         number: fav.number,
@@ -1018,6 +1041,7 @@
                         isSecondary: false
                     }];
                 }).flat().filter(Boolean);
+
                 return FilterStrategy.all(filtered, searchTerm);
             });
         }
@@ -1033,14 +1057,13 @@
                 this.setupIntersectionObserver();
                 this.debouncedRender = this.debounce(this.renderChannels.bind(this), 300);
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
-                this.setupSportFilters();
             }
 
             debounce(func, wait, immediate = false) {
                 let timeout;
                 return function() {
                     const context = this, args = arguments;
-                    const later = () => {
+                    const later = function() {
                         timeout = null;
                         if (!immediate) func.apply(context, args);
                     };
@@ -1060,7 +1083,6 @@
                     currentStream: null,
                     isDarkMode: localStorage.getItem('darkMode') === 'true',
                     currentFilter: localStorage.getItem('currentFilter') || 'all',
-                    selectedSports: JSON.parse(localStorage.getItem('tvApp_selectedSports')) || [],
                     playerVisible: false,
                     healthCheckInterval: null,
                     isLoading: false,
@@ -1088,29 +1110,8 @@
                     backupMode: false,
                     searchIndex: null
                 };
-                this.stateManager.setState(this.state);
-            }
 
-            setupSportFilters() {
-                const sportButtons = document.querySelectorAll('.sport-button');
-                sportButtons.forEach(button => {
-                    const sport = button.dataset.sport;
-                    if (this.state.selectedSports.includes(sport)) {
-                        button.classList.add('sport-button--active');
-                    }
-                    button.addEventListener('click', () => {
-                        button.classList.toggle('sport-button--active');
-                        if (button.classList.contains('sport-button--active')) {
-                            if (!this.state.selectedSports.includes(sport)) {
-                                this.state.selectedSports.push(sport);
-                            }
-                        } else {
-                            this.state.selectedSports = this.state.selectedSports.filter(s => s !== sport);
-                        }
-                        localStorage.setItem('tvApp_selectedSports', JSON.stringify(this.state.selectedSports));
-                        this.renderChannels();
-                    });
-                });
+                this.stateManager.setState(this.state);
             }
 
             initializeDOM() {
@@ -1142,15 +1143,20 @@
                     channelInfo: document.getElementById('channelInfo'),
                     channelNumberDisplay: document.getElementById('channelNumberDisplay'),
                     playerSection: document.getElementById('playerSection'),
-                    playerControls: document.getElementById('playerControls'),
-                    sportFilters: document.getElementById('sportFilters')
+                    playerControls: document.getElementById('playerControls')
                 };
 
-                if (this.state.isDarkMode) document.body.classList.add('dark-mode');
+                if (this.state.isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                }
+
                 this.toggleStickyPlayer(this.state.stickyPlayer);
                 this.elements.toggleStickyBtn.innerHTML = this.state.stickyPlayer ? '⛉' : '⛊';
                 this.elements.toggleStickyBtn.title = this.state.stickyPlayer ? "Liberar reproductor" : "Fijar reproductor";
-                if (this.state.fullscreen) document.documentElement.requestFullscreen();
+
+                if (this.state.fullscreen) {
+                    document.documentElement.requestFullscreen();
+                }
             }
 
             setupIntersectionObserver() {
@@ -1158,7 +1164,9 @@
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
                             const img = entry.target.querySelector('img');
-                            if (img && img.dataset.src) img.src = img.dataset.src;
+                            if (img && img.dataset.src) {
+                                img.src = img.dataset.src;
+                            }
                         }
                     });
                 }, { threshold: 0.1 });
@@ -1169,7 +1177,11 @@
                     if (e.target.closest('.channel-card')) {
                         const channelCard = e.target.closest('.channel-card');
                         const channelId = channelCard.dataset.id;
-                        if (this.state.currentFilter === 'all') this.handleTripleClick(channelId);
+                        
+                        if (this.state.currentFilter === 'all') {
+                            this.handleTripleClick(channelId);
+                        }
+                        
                         const channel = this.state.channels.find(c => c.number === channelId);
                         if (channel) this.playChannel(channel);
                     }
@@ -1187,19 +1199,46 @@
                         this.hideChannelList();
                     }
                     
-                    if (e.target.id === 'closePlayerBtn') this.closePlayer();
-                    if (e.target.id === 'prevChannelBtn') this.navigateChannel('prev');
-                    if (e.target.id === 'nextChannelBtn') this.navigateChannel('next');
-                    if (e.target.id === 'toggleStickyBtn') this.toggleStickyMode();
-                    if (e.target.id === 'favoriteBtn') this.handleFavoriteClick();
-                    if (e.target.id === 'closeChannelListBtn') this.hideChannelList();
-                    if (e.target.id === 'saveFavoriteBtn') this.saveFavorite();
-                    if (e.target.id === 'cancelFavoriteBtn') this.hideFavoriteModal();
+                    if (e.target.id === 'closePlayerBtn') {
+                        this.closePlayer();
+                    }
+                    
+                    if (e.target.id === 'prevChannelBtn') {
+                        this.navigateChannel('prev');
+                    }
+                    
+                    if (e.target.id === 'nextChannelBtn') {
+                        this.navigateChannel('next');
+                    }
+                    
+                    if (e.target.id === 'toggleStickyBtn') {
+                        this.toggleStickyMode();
+                    }
+                    
+                    if (e.target.id === 'favoriteBtn') {
+                        this.handleFavoriteClick();
+                    }
+                    
+                    if (e.target.id === 'closeChannelListBtn') {
+                        this.hideChannelList();
+                    }
+                    
+                    if (e.target.id === 'saveFavoriteBtn') {
+                        this.saveFavorite();
+                    }
+                    
+                    if (e.target.id === 'cancelFavoriteBtn') {
+                        this.hideFavoriteModal();
+                    }
                 });
 
-                this.elements.searchInput.addEventListener('input', () => this.debouncedRender());
+                this.elements.searchInput.addEventListener('input', () => {
+                    this.debouncedRender();
+                });
                 this.elements.searchInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.debouncedSearch();
+                    if (e.key === 'Enter') {
+                        this.debouncedSearch();
+                    }
                 });
                 this.elements.channelListSearch.addEventListener('input', this.debouncedRender);
 
@@ -1217,8 +1256,15 @@
 
             handleTripleClick(channelId) {
                 this.state.clickCount++;
-                if (this.state.tripleClickTimer) clearTimeout(this.state.tripleClickTimer);
-                this.state.tripleClickTimer = setTimeout(() => this.state.clickCount = 0, 500);
+                
+                if (this.state.tripleClickTimer) {
+                    clearTimeout(this.state.tripleClickTimer);
+                }
+                
+                this.state.tripleClickTimer = setTimeout(() => {
+                    this.state.clickCount = 0;
+                }, 500);
+                
                 if (this.state.clickCount === 3) {
                     this.state.clickCount = 0;
                     if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
@@ -1251,6 +1297,7 @@
                 try {
                     const targetUrl = `https://${this.state.baseDomain}/`;
                     const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`;
+                    
                     const response = await fetch(proxyUrl);
                     if (!response.ok) throw new Error('Error en la conexión');
                     
@@ -1262,9 +1309,11 @@
                             localStorage.setItem('daddyliveBackup', JSON.stringify(newChannels));
                             this.state.backupChannels = newChannels;
                             this.state.backupMode = false;
+                            
                             this.renderChannels();
                             this.updateSystemStatus('healthy');
                             this.updateChannelCount();
+                            
                             const currentDate = this.extractCurrentDate(data);
                             this.showNotification(`Canales actualizados (${currentDate})`, 3000);
                         }
@@ -1292,14 +1341,40 @@
                     let currentSport = 'General';
 
                     const autoChannels = JSON.parse(localStorage.getItem('autoChannels')) || {};
+                    
                     const sportTranslations = {
-                        'Football': 'Fútbol', 'Soccer': 'Fútbol', 'Basketball': 'Baloncesto',
-                        'Tennis': 'Tenis', 'Baseball': 'Béisbol', 'Boxing': 'Boxeo',
-                        'Handball': 'Balonmano', 'Cycling': 'Ciclismo', 'Swimming': 'Natación',
-                        'Athletics': 'Atletismo', 'Darts': 'Dardos'
+                        'Football': 'Fútbol',
+                        'Soccer': 'Fútbol',
+                        'Basketball': 'Baloncesto',
+                        'Tennis': 'Tenis',
+                        'Baseball': 'Béisbol',
+                        'Hockey': 'Hockey',
+                        'Golf': 'Golf',
+                        'Boxing': 'Boxeo',
+                        'MMA': 'Artes Marciales Mixtas',
+                        'Rugby': 'Rugby',
+                        'Cricket': 'Críquet',
+                        'Volleyball': 'Voleibol',
+                        'Handball': 'Balonmano',
+                        'Cycling': 'Ciclismo',
+                        'Formula 1': 'Fórmula 1',
+                        'MotoGP': 'MotoGP',
+                        'Wrestling': 'Lucha Libre',
+                        'Swimming': 'Natación',
+                        'Athletics': 'Atletismo',
+                        'Snooker': 'Snooker',
+                        'Darts': 'Dardos',
+                        'American Football': 'Fútbol Americano',
+                        'Motorsports': 'Deportes de Motor',
+                        'Winter Sports': 'Deportes de Invierno',
+                        'Water Sports': 'Deportes Acuáticos',
+                        'Extreme Sports': 'Deportes Extremos',
+                        'E-Sports': 'Deportes Electrónicos',
+                        'Other Sports': 'Otros Deportes'
                     };
 
                     const elements = doc.querySelectorAll('strong, h2');
+                    
                     elements.forEach(element => {
                         if (element.tagName === 'H2') {
                             const originalSport = element.textContent.trim();
@@ -1326,6 +1401,7 @@
                             if (channelMatch) {
                                 const channelName = channelMatch[1].trim();
                                 const channelNumber = channelMatch[2];
+                                
                                 const channelKey = `${channelNumber}|${channelName}|${adjustedTime}|${eventText.replace(timeRegex, '').trim()}`;
                                 
                                 if (!uniqueChannels.has(channelKey)) {
@@ -1340,6 +1416,7 @@
                                         }
                                     }
                                     
+                                    // Actualizar autoChannels si el nombre es diferente o no existe
                                     if (!autoChannels[channelNumber] || autoChannels[channelNumber].name !== channelName) {
                                         autoChannels[channelNumber] = {
                                             name: channelName,
@@ -1359,12 +1436,14 @@
                                         isFavorite: this.state.favorites.some(fav => fav.number === channelNumber),
                                         isSecondary: false
                                     });
+                                    
                                     validLinkChannels++;
                                 }
                             }
                         });
                     });
 
+                    // Añadir canales automáticos que no aparecieron en esta actualización
                     Object.entries(autoChannels).forEach(([number, channelData]) => {
                         if (!channels.some(c => c.number === number)) {
                             channels.push({
@@ -1381,7 +1460,10 @@
                         }
                     });
 
-                    if (validLinkChannels < this.state.minValidChannels) this.state.backupMode = true;
+                    if (validLinkChannels < this.state.minValidChannels) {
+                        this.state.backupMode = true;
+                    }
+
                     return channels;
                 } catch (error) {
                     console.error('Error al extraer canales:', error);
@@ -1413,6 +1495,7 @@
                     this.updateChannelCount();
                     this.showNotification('Mostrando copia de seguridad. Actualizando...', 3000);
                 } else {
+                    // Si no hay copia de seguridad, cargar desde autoChannels
                     const autoChannels = JSON.parse(localStorage.getItem('autoChannels')) || {};
                     const autoChannelsList = Object.entries(autoChannels).map(([number, channelData]) => ({
                         name: channelData.name,
@@ -1441,21 +1524,24 @@
 
             async loadPremiumLinks() {
                 this.state.premiumLinks = {};
+                
                 for (const server of this.state.premiumServers) {
                     try {
                         const response = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(server)}`);
                         if (!response.ok) continue;
+                        
                         const data = await response.text();
                         if (!data) continue;
                         
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(data, 'text/html');
                         const links = doc.querySelectorAll('a[href*="premium"]');
-                        const serverLinks = {};
                         
+                        const serverLinks = {};
                         links.forEach(link => {
                             const href = link.getAttribute('href');
                             const text = link.textContent.trim();
+                            
                             const channelNumMatch = href.match(/premium(\d+)/i);
                             const channelNameMatch = text.match(/^([A-Za-z0-9]+)/i);
                             
@@ -1466,6 +1552,7 @@
                         });
                         
                         this.state.premiumLinks[server] = serverLinks;
+                        
                     } catch (error) {
                         console.error(`Error al cargar servidor ${server}:`, error);
                     }
@@ -1475,6 +1562,7 @@
             findPremiumUrls(channelNumber) {
                 const channel = this.state.channels.find(c => c.number === channelNumber);
                 if (!channel) return [];
+                
                 const channelName = channel.name.toLowerCase().replace(/[^a-z0-9]/g, '');
                 const foundUrls = [];
                 const usedServers = new Set();
@@ -1495,9 +1583,11 @@
                 if (channelName.length >= 2) {
                     for (const server in this.state.premiumLinks) {
                         if (usedServers.has(server)) continue;
+                        
                         for (const [key, url] of Object.entries(this.state.premiumLinks[server])) {
                             const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
                             const normalizedUrl = url.toLowerCase();
+                            
                             if (!normalizedUrl.includes('premium') && 
                                 (normalizedUrl.includes(`/${channelName}`) || 
                                  normalizedUrl.includes(`${channelName}/`))) {
@@ -1509,6 +1599,7 @@
                         }
                     }
                 }
+                
                 return foundUrls;
             }
 
@@ -1519,16 +1610,21 @@
                 }
 
                 this.state.currentStream = channel;
+                
                 this.elements.playerContainer.classList.add('player-container--active');
                 this.elements.playerControls.classList.add('player-controls--active');
+                
                 this.elements.channelInfo.textContent = channel.name;
                 this.elements.channelNumberDisplay.textContent = `CH-${channel.number}`;
+                
                 this.elements.loading.classList.add('loading--active');
                 
                 if (this.state.usePremium) {
                     const premiumUrls = this.findPremiumUrls(channel.number);
+                    
                     if (premiumUrls.length > 0) {
                         this.elements.loading.classList.remove('loading--active');
+                        
                         if (premiumUrls.length === 1) {
                             this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="${premiumUrls[0]}" allowfullscreen></iframe>`;
                         } else {
@@ -1538,12 +1634,14 @@
                                 `2. ${premiumUrls[1].split('/')[2]}\n\n` +
                                 `¿Quieres usar la primera opción? (Cancelar para usar la segunda)`
                             );
+                            
                             const selectedUrl = choice ? premiumUrls[0] : premiumUrls[1];
                             this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="${selectedUrl}" allowfullscreen></iframe>`;
                         }
                         return;
                     }
                 }
+                
                 this.playOriginalChannel(channel);
             }
 
@@ -1557,13 +1655,16 @@
                     this.state.hls.destroy();
                     this.state.hls = null;
                 }
+                
                 this.elements.playerContainer.classList.remove('player-container--active');
                 this.elements.playerControls.classList.remove('player-controls--active');
                 this.elements.playerContainer.innerHTML = '<video id="videoPlayer" controls></video>';
                 this.elements.videoPlayer = document.getElementById('videoPlayer');
                 this.state.currentStream = null;
+                
                 this.elements.channelInfo.textContent = '';
                 this.elements.channelNumberDisplay.textContent = '';
+                
                 if (this.state.healthCheckInterval) {
                     clearInterval(this.state.healthCheckInterval);
                     this.state.healthCheckInterval = null;
@@ -1573,9 +1674,11 @@
             applyFilter(filter) {
                 this.state.currentFilter = filter;
                 localStorage.setItem('currentFilter', filter);
+                
                 this.elements.filterAll.classList.remove('filter-button--active');
                 this.elements.filterLive.classList.remove('filter-button--active');
                 this.elements.filterFavorites.classList.remove('filter-button--active');
+                
                 if (filter === 'all') {
                     this.elements.filterAll.classList.add('filter-button--active');
                 } else if (filter === 'live') {
@@ -1583,11 +1686,20 @@
                 } else if (filter === 'favorites') {
                     this.elements.filterFavorites.classList.add('filter-button--active');
                 }
+                
                 this.renderChannels();
+            }
+
+            prepareFilterIndexes() {
+                this.state.searchIndex = this.state.channels.map(channel => ({
+                    id: channel.number,
+                    text: `${channel.name} ${channel.number} ${channel.event} ${channel.time} ${channel.sport}`.toLowerCase()
+                }));
             }
 
             renderChannels() {
                 if (this.state.isLoading) return;
+                
                 const filteredChannels = this.filterChannels();
                 this.elements.channelsGrid.innerHTML = '';
                 
@@ -1597,6 +1709,7 @@
                 }
                 
                 const fragment = document.createDocumentFragment();
+                
                 if (this.state.isGrouped) {
                     this.renderGroupedChannels(filteredChannels, fragment);
                 } else {
@@ -1605,17 +1718,21 @@
                         fragment.appendChild(channelCard);
                     });
                 }
+                
                 this.elements.channelsGrid.appendChild(fragment);
             }
 
             renderGroupedChannels(channels, fragment) {
                 const groups = {};
+                
                 const channelsWithEvent = channels.filter(channel => channel.event.trim() !== '');
                 const channelsWithoutEvent = channels.filter(channel => channel.event.trim() === '');
                 
                 channelsWithEvent.forEach(channel => {
                     const groupKey = `${channel.time || 'LIVE'}|${channel.event}`;
-                    if (!groups[groupKey]) groups[groupKey] = [];
+                    if (!groups[groupKey]) {
+                        groups[groupKey] = [];
+                    }
                     groups[groupKey].push(channel);
                 });
                 
@@ -1627,24 +1744,31 @@
                 const sortedGroups = Object.entries(groups).sort((a, b) => {
                     if (a[0].startsWith('NO_EVENT')) return 1;
                     if (b[0].startsWith('NO_EVENT')) return -1;
+                    
                     if (a[0].startsWith('LIVE')) return -1;
                     if (b[0].startsWith('LIVE')) return 1;
+                    
                     const [timeA] = a[0].split('|');
                     const [timeB] = b[0].split('|');
+                    
                     const [hoursA] = timeA.split(':').map(Number);
                     const [hoursB] = timeB.split(':').map(Number);
+                    
                     if (hoursA < 6 && hoursB >= 6) return 1;
                     if (hoursA >= 6 && hoursB < 6) return -1;
+                    
                     return timeA.localeCompare(timeB);
                 });
                 
                 sortedGroups.forEach(([groupKey, groupChannels]) => {
                     const groupElement = DOMFactory.createChannelGroup(groupKey, groupChannels);
                     const groupContent = groupElement.querySelector('.channel-group__content');
+                    
                     groupChannels.forEach(channel => {
                         const channelCard = DOMFactory.createChannelCard(channel, true);
                         groupContent.appendChild(channelCard);
                     });
+                    
                     fragment.appendChild(groupElement);
                 });
             }
@@ -1652,6 +1776,7 @@
             filterChannels() {
                 const searchTerm = this.elements.searchInput.value.trim().toLowerCase();
                 let filtered;
+                
                 const visibleChannels = this.state.channels.filter(channel => 
                     !this.state.hiddenChannels.includes(channel.number)
                 );
@@ -1667,32 +1792,26 @@
                         filtered = FilterStrategy.all(visibleChannels, searchTerm);
                 }
                 
-                if (this.state.selectedSports.length > 0) {
-                    filtered = filtered.filter(channel => 
-                        this.state.selectedSports.includes(channel.sport) || 
-                        (this.state.selectedSports.includes('Otros') && ![
-                            'Fútbol', 'Baloncesto', 'Béisbol', 'Fútbol Americano', 
-                            'Rugby', 'Tenis', 'Hockey', 'Boxeo', 'Fórmula 1'
-                        ].includes(channel.sport))
-                    );
-                }
-                
                 if (this.state.isGrouped) {
                     filtered.sort((a, b) => {
                         if (!a.time && b.time) return -1;
                         if (a.time && !b.time) return 1;
+                        
                         if (a.time && b.time) {
                             const timeCompare = a.time.localeCompare(b.time);
                             if (timeCompare !== 0) return timeCompare;
                         }
+                        
                         return a.event.localeCompare(b.event);
                     });
                 }
+                
                 return filtered;
             }
 
             showChannelList() {
                 this.elements.channelListContent.innerHTML = '';
+                
                 let channelsToShow;
                 
                 switch (this.state.currentFilter) {
@@ -1717,6 +1836,7 @@
                     : channelsToShow;
                 
                 let currentChannelFound = false;
+                
                 filteredChannels.forEach(channel => {
                     const channelItem = document.createElement('div');
                     channelItem.className = `channel-list-item ${this.state.currentStream && this.state.currentStream.number === channel.number ? 'channel-list-item--active' : ''}`;
@@ -1732,11 +1852,14 @@
                             ${channel.sport}
                         </div>
                     `;
+                    
                     channelItem.addEventListener('click', () => {
                         this.playChannel(channel);
                         this.hideChannelList();
                     });
+                    
                     this.elements.channelListContent.appendChild(channelItem);
+                    
                     if (this.state.currentStream && this.state.currentStream.number === channel.number) {
                         channelItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         currentChannelFound = true;
@@ -1758,10 +1881,15 @@
                             ${this.state.currentStream.sport}
                         </div>
                     `;
-                    currentChannelItem.addEventListener('click', () => this.hideChannelList());
+                    
+                    currentChannelItem.addEventListener('click', () => {
+                        this.hideChannelList();
+                    });
+                    
                     this.elements.channelListContent.prepend(currentChannelItem);
                     currentChannelItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
+                
                 this.elements.channelListModal.classList.add('modal--active');
             }
 
@@ -1786,7 +1914,9 @@
                     alert('Por favor ingresa un nombre para el favorito');
                     return;
                 }
+                
                 if (!this.state.currentStream) return;
+                
                 const existingIndex = this.state.favorites.findIndex(f => f.number === this.state.currentStream.number);
                 
                 if (existingIndex === -1) {
@@ -1806,17 +1936,29 @@
                 
                 localStorage.setItem('daddyliveFavorites', JSON.stringify(this.state.favorites));
                 this.elements.favoriteBtn.classList.add('control-btn--active');
-                if (this.state.currentFilter === 'favorites') this.renderChannels();
+                
+                if (this.state.currentFilter === 'favorites') {
+                    this.renderChannels();
+                }
+                
                 this.hideFavoriteModal();
                 this.showNotification('Favorito guardado');
             }
 
             removeFavorite(channelNumber) {
                 this.state.favorites = this.state.favorites.filter(f => f.number !== channelNumber);
+                
                 const channelIndex = this.state.channels.findIndex(c => c.number === channelNumber);
-                if (channelIndex !== -1) this.state.channels[channelIndex].isFavorite = false;
+                if (channelIndex !== -1) {
+                    this.state.channels[channelIndex].isFavorite = false;
+                }
+                
                 localStorage.setItem('daddyliveFavorites', JSON.stringify(this.state.favorites));
-                if (this.state.currentFilter === 'favorites') this.renderChannels();
+                
+                if (this.state.currentFilter === 'favorites') {
+                    this.renderChannels();
+                }
+                
                 if (this.state.currentStream && this.state.currentStream.number === channelNumber) {
                     this.elements.favoriteBtn.classList.remove('control-btn--active');
                 }
@@ -1829,6 +1971,7 @@
                     'unstable': { text: 'Inestable', class: 'status-badge--warning' },
                     'down': { text: 'Inactivo', class: 'status-badge--danger' }
                 };
+                
                 this.elements.statusBadge.textContent = statusMap[status].text;
                 this.elements.statusBadge.className = 'status-badge ' + (statusMap[status].class || '');
             }
@@ -1840,8 +1983,10 @@
 
             navigateChannel(direction) {
                 if (!this.state.currentStream) return;
+                
                 const currentNumber = parseInt(this.state.currentStream.number);
                 const newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
+                
                 const nextChannel = this.state.channels.find(c => c.number === newNumber.toString());
                 
                 if (nextChannel) {
@@ -1881,7 +2026,11 @@
             togglePremiumMode() {
                 this.state.usePremium = !this.state.usePremium;
                 localStorage.setItem('usePremium', this.state.usePremium);
-                if (this.state.currentStream) this.playChannel(this.state.currentStream);
+                
+                if (this.state.currentStream) {
+                    this.playChannel(this.state.currentStream);
+                }
+                
                 this.showNotification(this.state.usePremium ? 'Modo premium activado' : 'Modo premium desactivado');
             }
 
@@ -1889,7 +2038,9 @@
                 this.state.isGrouped = !this.state.isGrouped;
                 localStorage.setItem('isGrouped', this.state.isGrouped);
                 this.renderChannels();
-                this.showNotification(this.state.isGrouped ? 'Modo agrupado activado' : 'Modo agrupado desactivado');
+                
+                const message = this.state.isGrouped ? 'Modo agrupado activado' : 'Modo agrupado desactivado';
+                this.showNotification(message);
             }
 
             toggleDarkMode() {
@@ -1914,15 +2065,20 @@
                 notification.className = 'update-notification';
                 notification.textContent = message;
                 notification.style.display = 'block';
+                
                 document.body.appendChild(notification);
+                
                 setTimeout(() => {
                     notification.style.opacity = '0';
-                    setTimeout(() => notification.remove(), 500);
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 500);
                 }, duration);
             }
 
             handleSearchCommand() {
                 const value = this.elements.searchInput.value.trim();
+                
                 if (value === '&O') {
                     this.applyFilter('all');
                     this.elements.searchInput.value = '';
@@ -1973,6 +2129,7 @@
                 if (/^#?\d+$/.test(value)) {
                     const channelNumber = value.replace('#', '');
                     const channel = this.state.channels.find(c => c.number === channelNumber);
+                    
                     if (channel) {
                         this.playChannel(channel);
                     } else {
@@ -1987,6 +2144,7 @@
                             isSecondary: false
                         });
                     }
+                    
                     this.elements.searchInput.value = '';
                 }
             }
@@ -1994,14 +2152,20 @@
             handleFavoriteClick() {
                 this.clearLongPress();
                 if (!this.state.currentStream) return;
-                if (!this.state.currentStream.isFavorite) this.showFavoriteModal();
+                
+                if (!this.state.currentStream.isFavorite) {
+                    this.showFavoriteModal();
+                }
             }
 
             startLongPress() {
                 if (!this.state.currentStream) return;
+                
                 this.state.longPressTimer = setTimeout(() => {
-                    if (this.state.currentStream.isFavorite && confirm('¿Quieres eliminar este canal de favoritos?')) {
-                        this.removeFavorite(this.state.currentStream.number);
+                    if (this.state.currentStream.isFavorite) {
+                        if (confirm('¿Quieres eliminar este canal de favoritos?')) {
+                            this.removeFavorite(this.state.currentStream.number);
+                        }
                     }
                 }, 1000);
             }
