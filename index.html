@@ -298,6 +298,42 @@
             padding: 0.5rem 0 !important;
         }
 
+        /* Nuevos estilos para los botones de emoji */
+        .emoji-filters {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .emoji-filter-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .emoji-filter-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .emoji-filter-btn--active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
         .channels-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -610,6 +646,16 @@
                 flex: 0 0 36px !important;
             }
 
+            .emoji-filters {
+                gap: 6px;
+            }
+
+            .emoji-filter-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
             .player-controls {
                 flex-wrap: nowrap;
                 gap: 8px;
@@ -689,6 +735,19 @@
                 <button class="filter-button filter-button--active" id="filterAll">Todos</button>
                 <button class="filter-button" id="filterLive">Directo</button>
                 <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
+            </div>
+
+            <!-- Nueva sección de botones de emoji -->
+            <div class="emoji-filters" id="emojiFilters">
+                <button class="emoji-filter-btn" data-filter="TV Shows">📺</button>
+                <button class="emoji-filter-btn" data-filter="Futbol">⚽</button>
+                <button class="emoji-filter-btn" data-filter="Baloncesto">🏀</button>
+                <button class="emoji-filter-btn" data-filter="Tenis">🎾</button>
+                <button class="emoji-filter-btn" data-filter="MMA">👊</button>
+                <button class="emoji-filter-btn" data-filter="Boxeo">🥊</button>
+                <button class="emoji-filter-btn" data-filter="Motorsports">🏁</button>
+                <button class="emoji-filter-btn" data-filter="F1">🏎️</button>
+                <button class="emoji-filter-btn" data-filter="Spain ES Movistar M+">🇪🇸</button>
             </div>
         </section>
 
@@ -923,29 +982,12 @@
                     'Basketball': 'Baloncesto',
                     'Tennis': 'Tenis',
                     'Baseball': 'Béisbol',
-                    'Hockey': 'Hockey',
-                    'Golf': 'Golf',
                     'Boxing': 'Boxeo',
-                    'MMA': 'Artes Marciales Mixtas',
-                    'Rugby': 'Rugby',
-                    'Cricket': 'Críquet',
-                    'Volleyball': 'Voleibol',
                     'Handball': 'Balonmano',
                     'Cycling': 'Ciclismo',
-                    'Formula 1': 'Fórmula 1',
-                    'MotoGP': 'MotoGP',
-                    'Wrestling': 'Lucha Libre',
                     'Swimming': 'Natación',
                     'Athletics': 'Atletismo',
-                    'Snooker': 'Snooker',
                     'Darts': 'Dardos',
-                    'American Football': 'Fútbol Americano',
-                    'Motorsports': 'Deportes de Motor',
-                    'Winter Sports': 'Deportes de Invierno',
-                    'Water Sports': 'Deportes Acuáticos',
-                    'Extreme Sports': 'Deportes Extremos',
-                    'E-Sports': 'Deportes Electrónicos',
-                    'Other Sports': 'Otros Deportes'
                 };
 
                 const translatedSport = sportTranslations[sport] || sport;
@@ -979,7 +1021,7 @@
         };
 
         class FilterStrategy {
-            static all = memoize((channels, searchTerm = '') => {
+            static all = memoize((channels, searchTerm = '', emojiFilters = []) => {
                 let filtered = [...channels];
                 
                 if (searchTerm) {
@@ -1002,10 +1044,27 @@
                     }
                 }
                 
+                // Aplicar filtros de emoji si hay alguno activo
+                if (emojiFilters.length > 0) {
+                    filtered = filtered.filter(channel => {
+                        return emojiFilters.some(filter => {
+                            if (filter === 'Spain ES Movistar M+') {
+                                return channel.name.includes(' Spain ') || 
+                                       channel.name.includes(' ES ') || 
+                                       channel.name.includes('Movistar') || 
+                                       channel.name.includes('M+');
+                            }
+                            return channel.sport.includes(filter) || 
+                                   channel.event.includes(filter) || 
+                                   channel.name.includes(filter);
+                        });
+                    });
+                }
+                
                 return filtered;
             });
 
-            static live = memoize((channels, searchTerm = '') => {
+            static live = memoize((channels, searchTerm = '', emojiFilters = []) => {
                 const now = new Date();
                 let filtered = channels.filter(channel => {
                     if (!channel.time) return false;
@@ -1018,10 +1077,10 @@
                     return diffMinutes >= -15 && diffMinutes <= 180;
                 });
 
-                return FilterStrategy.all(filtered, searchTerm);
+                return FilterStrategy.all(filtered, searchTerm, emojiFilters);
             });
 
-            static favorites = memoize((favorites, allChannels, searchTerm = '') => {
+            static favorites = memoize((favorites, allChannels, searchTerm = '', emojiFilters = []) => {
                 let filtered = favorites.map(fav => {
                     const matchingChannels = allChannels.filter(c => c.number === fav.number);
                     
@@ -1042,7 +1101,7 @@
                     }];
                 }).flat().filter(Boolean);
 
-                return FilterStrategy.all(filtered, searchTerm);
+                return FilterStrategy.all(filtered, searchTerm, emojiFilters);
             });
         }
 
@@ -1057,6 +1116,7 @@
                 this.setupIntersectionObserver();
                 this.debouncedRender = this.debounce(this.renderChannels.bind(this), 300);
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
+                this.activeEmojiFilters = [];
             }
 
             debounce(func, wait, immediate = false) {
@@ -1143,7 +1203,8 @@
                     channelInfo: document.getElementById('channelInfo'),
                     channelNumberDisplay: document.getElementById('channelNumberDisplay'),
                     playerSection: document.getElementById('playerSection'),
-                    playerControls: document.getElementById('playerControls')
+                    playerControls: document.getElementById('playerControls'),
+                    emojiFilters: document.getElementById('emojiFilters')
                 };
 
                 if (this.state.isDarkMode) {
@@ -1189,6 +1250,12 @@
                     if (e.target.closest('.filter-button')) {
                         const filter = e.target.closest('.filter-button').id.replace('filter', '').toLowerCase();
                         this.applyFilter(filter);
+                    }
+                    
+                    if (e.target.closest('.emoji-filter-btn')) {
+                        const emojiBtn = e.target.closest('.emoji-filter-btn');
+                        const filter = emojiBtn.dataset.filter;
+                        this.toggleEmojiFilter(filter, emojiBtn);
                     }
                     
                     if (e.target.closest('.channel-list-item')) {
@@ -1245,13 +1312,25 @@
                 this.elements.favoriteBtn.addEventListener('touchstart', () => this.startLongPress());
                 this.elements.favoriteBtn.addEventListener('touchend', () => this.clearLongPress());
                 this.elements.favoriteBtn.addEventListener('touchcancel', () => this.clearLongPress());
-
+                
                 document.addEventListener('fullscreenchange', () => {
                     this.state.fullscreen = !!document.fullscreenElement;
                     localStorage.setItem('fullscreen', this.state.fullscreen);
                 });
 
                 window.addEventListener('scroll', this.debounce(() => {}, 100));
+            }
+
+            toggleEmojiFilter(filter, button) {
+                button.classList.toggle('emoji-filter-btn--active');
+                
+                if (button.classList.contains('emoji-filter-btn--active')) {
+                    this.activeEmojiFilters.push(filter);
+                } else {
+                    this.activeEmojiFilters = this.activeEmojiFilters.filter(f => f !== filter);
+                }
+                
+                this.renderChannels();
             }
 
             handleTripleClick(channelId) {
@@ -1792,13 +1871,13 @@
                 
                 switch (this.state.currentFilter) {
                     case 'live':
-                        filtered = FilterStrategy.live(visibleChannels, searchTerm);
+                        filtered = FilterStrategy.live(visibleChannels, searchTerm, this.activeEmojiFilters);
                         break;
                     case 'favorites':
-                        filtered = FilterStrategy.favorites(this.state.favorites, visibleChannels, searchTerm);
+                        filtered = FilterStrategy.favorites(this.state.favorites, visibleChannels, searchTerm, this.activeEmojiFilters);
                         break;
                     default:
-                        filtered = FilterStrategy.all(visibleChannels, searchTerm);
+                        filtered = FilterStrategy.all(visibleChannels, searchTerm, this.activeEmojiFilters);
                 }
                 
                 if (this.state.isGrouped) {
