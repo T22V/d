@@ -324,7 +324,6 @@
             padding: 0.5rem 0 !important;
         }
 
-        /* Nuevos estilos para los botones de emoji */
         .emoji-filters {
             display: flex;
             justify-content: center;
@@ -769,7 +768,6 @@
                 <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
             </div>
 
-            <!-- Nueva sección de botones de emoji -->
             <div class="emoji-filters" id="emojiFilters">
                 <button class="emoji-filter-btn" data-filter="TV Shows">📺</button>
                 <button class="emoji-filter-btn" data-filter="Fútbol">⚽</button>
@@ -792,8 +790,8 @@
 
     <header class="header">
         <div class="header__left-buttons">
-            <button class="header-button" onclick="window.open('https://hq.livesoccer.sx/', '_blank')">LS</button>
-            <button class="header-button" onclick="window.open('https://sporthd.live/', '_blank')">SH</button>
+            <button class="header-button" id="lsButton">LS</button>
+            <button class="header-button" id="shButton">SH</button>
         </div>
         <div class="header__actions">
             <span>Estado:</span>
@@ -801,7 +799,7 @@
             <span class="channel-count" id="channelCount">0 canales</span>
         </div>
         <div class="header__right-buttons">
-            <button class="header-button" onclick="window.open('https://wearechecking.live/streams-pages/motorsports', '_blank')">WR</button>
+            <button class="header-button" id="wrButton">WR</button>
             <button class="header-button" onclick="window.open('https://ziggy079w.toolcirclef6mua.cfd/es', '_blank')">SR</button>
         </div>
     </header>
@@ -1084,7 +1082,6 @@
                     }
                 }
                 
-                // Aplicar filtros de emoji si hay alguno activo
                 if (emojiFilters.length > 0) {
                     filtered = filtered.filter(channel => {
                         return emojiFilters.some(filter => {
@@ -1157,6 +1154,7 @@
                 this.debouncedRender = this.debounce(this.renderChannels.bind(this), 300);
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
                 this.activeEmojiFilters = [];
+                this.setupExternalPlayerButtons();
             }
 
             debounce(func, wait, immediate = false) {
@@ -1172,6 +1170,33 @@
                     timeout = setTimeout(later, wait);
                     if (callNow) func.apply(context, args);
                 };
+            }
+
+            setupExternalPlayerButtons() {
+                document.getElementById('lsButton').addEventListener('click', () => 
+                    this.loadExternalUrl('https://hq.livesoccer.sx/')
+                );
+                document.getElementById('shButton').addEventListener('click', () => 
+                    this.loadExternalUrl('https://sporthd.live/')
+                );
+                document.getElementById('wrButton').addEventListener('click', () => 
+                    this.loadExternalUrl('https://wearechecking.live/streams-pages/motorsports')
+                );
+            }
+
+            loadExternalUrl(url) {
+                if (this.state.hls) {
+                    this.state.hls.destroy();
+                    this.state.hls = null;
+                }
+
+                this.elements.playerContainer.classList.add('player-container--active');
+                this.elements.playerControls.classList.add('player-controls--active');
+                
+                this.elements.channelInfo.textContent = 'Reproduciendo contenido externo';
+                this.elements.channelNumberDisplay.textContent = '';
+                
+                this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="${url}" allowfullscreen></iframe>`;
             }
 
             initializeState() {
@@ -1535,7 +1560,6 @@
                                         }
                                     }
                                     
-                                    // Actualizar autoChannels si el nombre es diferente o no existe
                                     if (!autoChannels[channelNumber] || autoChannels[channelNumber].name !== channelName) {
                                         autoChannels[channelNumber] = {
                                             name: channelName,
@@ -1562,7 +1586,6 @@
                         });
                     });
 
-                    // Añadir canales automáticos que no aparecieron en esta actualización
                     Object.entries(autoChannels).forEach(([number, channelData]) => {
                         if (!channels.some(c => c.number === number)) {
                             channels.push({
@@ -1614,7 +1637,6 @@
                     this.updateChannelCount();
                     this.showNotification('Mostrando copia de seguridad. Actualizando...', 3000);
                 } else {
-                    // Si no hay copia de seguridad, cargar desde autoChannels
                     const autoChannels = JSON.parse(localStorage.getItem('autoChannels')) || {};
                     const autoChannelsList = Object.entries(autoChannels).map(([number, channelData]) => ({
                         name: channelData.name,
@@ -1860,7 +1882,6 @@
                     groups[noEventGroupKey] = channelsWithoutEvent;
                 }
                 
-                // Ordenar los canales dentro de cada grupo para que los favoritos aparezcan primero
                 for (const groupKey in groups) {
                     groups[groupKey].sort((a, b) => {
                         if (a.isFavorite && !b.isFavorite) return -1;
