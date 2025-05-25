@@ -961,7 +961,7 @@
         class EnhancedStore extends Observable {
             setState(newState) {
                 const toPersist = {};
-                ['favorites', 'isDarkMode', 'currentFilter', 'stickyPlayer', 'usePremium', 'isGrouped', 'baseDomain', 'hiddenChannels', 'autoChannels'].forEach(key => {
+                ['favorites', 'isDarkMode', 'currentFilter', 'stickyPlayer', 'usePremium', 'isGrouped', 'baseDomain', 'hiddenChannels', 'autoChannels', 'activeEmojiFilters', 'lastSearchTerm'].forEach(key => {
                     if (newState[key] !== undefined) {
                         toPersist[key] = newState[key];
                         localStorage.setItem(`tvApp_${key}`, JSON.stringify(newState[key]));
@@ -1153,8 +1153,9 @@
                 this.setupIntersectionObserver();
                 this.debouncedRender = this.debounce(this.renderChannels.bind(this), 300);
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
-                this.activeEmojiFilters = [];
+                this.activeEmojiFilters = this.state.activeEmojiFilters || [];
                 this.setupExternalPlayerButtons();
+                this.restoreFilters();
             }
 
             debounce(func, wait, immediate = false) {
@@ -1233,10 +1234,37 @@
                     clickCount: 0,
                     minValidChannels: 50,
                     backupMode: false,
-                    searchIndex: null
+                    searchIndex: null,
+                    activeEmojiFilters: JSON.parse(localStorage.getItem('activeEmojiFilters')) || [],
+                    lastSearchTerm: localStorage.getItem('lastSearchTerm') || ''
                 };
 
                 this.stateManager.setState(this.state);
+            }
+
+            restoreFilters() {
+                this.elements.searchInput.value = this.state.lastSearchTerm;
+                
+                document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
+                    const filter = btn.dataset.filter;
+                    if (this.state.activeEmojiFilters.includes(filter)) {
+                        btn.classList.add('emoji-filter-btn--active');
+                    }
+                });
+                
+                this.elements.filterAll.classList.remove('filter-button--active');
+                this.elements.filterLive.classList.remove('filter-button--active');
+                this.elements.filterFavorites.classList.remove('filter-button--active');
+                
+                if (this.state.currentFilter === 'all') {
+                    this.elements.filterAll.classList.add('filter-button--active');
+                } else if (this.state.currentFilter === 'live') {
+                    this.elements.filterLive.classList.add('filter-button--active');
+                } else if (this.state.currentFilter === 'favorites') {
+                    this.elements.filterFavorites.classList.add('filter-button--active');
+                }
+                
+                this.renderChannels();
             }
 
             initializeDOM() {
@@ -1365,6 +1393,8 @@
                 });
 
                 this.elements.searchInput.addEventListener('input', () => {
+                    this.state.lastSearchTerm = this.elements.searchInput.value;
+                    localStorage.setItem('lastSearchTerm', this.state.lastSearchTerm);
                     this.debouncedRender();
                 });
                 this.elements.searchInput.addEventListener('keypress', (e) => {
@@ -1390,11 +1420,14 @@
                 button.classList.toggle('emoji-filter-btn--active');
                 
                 if (button.classList.contains('emoji-filter-btn--active')) {
-                    this.activeEmojiFilters.push(filter);
+                    if (!this.state.activeEmojiFilters.includes(filter)) {
+                        this.state.activeEmojiFilters.push(filter);
+                    }
                 } else {
-                    this.activeEmojiFilters = this.activeEmojiFilters.filter(f => f !== filter);
+                    this.state.activeEmojiFilters = this.state.activeEmojiFilters.filter(f => f !== filter);
                 }
                 
+                localStorage.setItem('activeEmojiFilters', JSON.stringify(this.state.activeEmojiFilters));
                 this.renderChannels();
             }
 
@@ -1932,13 +1965,13 @@
                 
                 switch (this.state.currentFilter) {
                     case 'live':
-                        filtered = FilterStrategy.live(visibleChannels, searchTerm, this.activeEmojiFilters);
+                        filtered = FilterStrategy.live(visibleChannels, searchTerm, this.state.activeEmojiFilters);
                         break;
                     case 'favorites':
-                        filtered = FilterStrategy.favorites(this.state.favorites, visibleChannels, searchTerm, this.activeEmojiFilters);
+                        filtered = FilterStrategy.favorites(this.state.favorites, visibleChannels, searchTerm, this.state.activeEmojiFilters);
                         break;
                     default:
-                        filtered = FilterStrategy.all(visibleChannels, searchTerm, this.activeEmojiFilters);
+                        filtered = FilterStrategy.all(visibleChannels, searchTerm, this.state.activeEmojiFilters);
                 }
                 
                 if (this.state.isGrouped) {
