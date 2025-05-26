@@ -737,6 +737,76 @@
                 text-align: center;
             }
         }
+
+        /* Nuevos estilos para modo horizontal */
+        @media (min-width: 768px) and (orientation: landscape) {
+            .channels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.2rem;
+            }
+
+            .channel-group__content {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            }
+
+            .channel-card {
+                padding: 1.2rem;
+            }
+
+            .channel-name {
+                font-size: 1rem;
+            }
+
+            .channel-event {
+                font-size: 0.9rem;
+            }
+
+            .channel-sport {
+                font-size: 0.8rem;
+            }
+
+            .channel-group__header {
+                padding: 1rem;
+            }
+
+            .channel-group__title {
+                font-size: 1rem;
+            }
+
+            .player-container {
+                height: calc(40vw + 40px);
+            }
+
+            .player-controls {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .control-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 1.1rem;
+            }
+
+            .channel-info, 
+            .channel-number-display {
+                font-size: 1rem;
+            }
+        }
+
+        @media (min-width: 1024px) and (orientation: landscape) {
+            .channels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            }
+
+            .channel-group__content {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            }
+
+            .main-container {
+                max-width: 95%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1180,7 +1250,7 @@
                     this.loadExternalUrl('https://sporthd.live/')
                 );
                 document.getElementById('wrButton').addEventListener('click', () => 
-                    this.loadExternalUrl('https://wearechecking.live/streams-pages/motorsports')
+                    this.loadExternalUrl('https://wearechecking.online/')
                 );
             }
 
