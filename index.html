@@ -797,7 +797,7 @@
         class TVApp {
             constructor() {
                 this.state = {
-                    channels: JSON.parse(localStorage.getItem('daddyliveChannels')) || [],
+                    channels: [],
                     currentStream: null,
                     isDarkMode: localStorage.getItem('darkMode') === 'true',
                     currentFilter: localStorage.getItem('currentFilter') || 'all',
@@ -830,6 +830,22 @@
                     isGrouped: localStorage.getItem('isGrouped') === 'true'
                 };
                 this.activeEmojiFilters = this.state.activeEmojiFilters || [];
+                
+                // Primero intentar cargar los canales del nuevo sistema
+                const savedChannels = localStorage.getItem('daddyliveChannels');
+                if (savedChannels) {
+                    try {
+                        this.state.channels = JSON.parse(savedChannels);
+                        console.log('Canales cargados desde localStorage:', this.state.channels.length);
+                    } catch (e) {
+                        console.error('Error al parsear canales:', e);
+                        this.state.channels = [];
+                    }
+                } else {
+                    // Si no hay datos en el nuevo sistema, verificar migración
+                    this.checkMigration();
+                }
+                
                 this.initializeDOM();
                 this.setupEventDelegation();
                 this.initializeServiceWorker();
@@ -838,21 +854,26 @@
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
                 this.setupExternalPlayerButtons();
                 this.restoreFilterState();
-                this.checkMigration();
             }
 
             checkMigration() {
-                const needsMigration = localStorage.getItem('daddyliveFavorites') ||
-                    localStorage.getItem('hiddenChannels') ||
-                    localStorage.getItem('autoChannels') ||
-                    localStorage.getItem('daddyliveBackup');
+                // Verificar si hay datos antiguos que necesiten migración
+                const hasOldFavorites = localStorage.getItem('daddyliveFavorites');
+                const hasOldHidden = localStorage.getItem('hiddenChannels');
+                const hasOldAuto = localStorage.getItem('autoChannels');
+                const hasOldBackup = localStorage.getItem('daddyliveBackup');
                 
-                if (needsMigration && this.state.channels.length === 0) {
+                if (hasOldFavorites || hasOldHidden || hasOldAuto || hasOldBackup) {
+                    console.log('Datos antiguos encontrados, iniciando migración...');
                     this.migrateToUnifiedStructure();
+                } else {
+                    console.log('No se encontraron datos antiguos que requieran migración');
+                    this.state.channels = [];
                 }
             }
 
             migrateToUnifiedStructure() {
+                console.log('Iniciando migración de datos...');
                 const oldFavorites = JSON.parse(localStorage.getItem('daddyliveFavorites')) || [];
                 const oldHidden = JSON.parse(localStorage.getItem('hiddenChannels')) || [];
                 const oldAuto = JSON.parse(localStorage.getItem('autoChannels')) || {};
@@ -860,50 +881,55 @@
                 
                 const unifiedChannels = new Map();
                 
+                // 1. Procesar canales de backup
                 oldBackup.forEach(channel => {
-                    unifiedChannels.set(channel.number, {
-                        number: channel.number,
-                        name: channel.name,
-                        url: channel.url || `https://${this.state.baseDomain}/embed/stream-${channel.number}.php`,
-                        isFavorite: oldFavorites.some(f => f.number === channel.number),
-                        isHidden: oldHidden.includes(channel.number),
-                        metadata: {
-                            time: channel.time || '',
-                            event: channel.event || '',
-                            sport: channel.sport || 'General',
-                            rawText: channel.rawText || `${channel.name} (CH-${channel.number})`
-                        }
-                    });
-                });
-
-                Object.entries(oldAuto).forEach(([number, channelData]) => {
-                    if (!unifiedChannels.has(number)) {
-                        unifiedChannels.set(number, {
-                            number: number,
-                            name: channelData.name,
-                            url: channelData.url || `https://${this.state.baseDomain}/embed/stream-${number}.php`,
-                            isFavorite: oldFavorites.some(f => f.number === number),
-                            isHidden: oldHidden.includes(number),
-                            isAuto: true,
+                    if (channel && channel.number && channel.name) {
+                        unifiedChannels.set(channel.number.toString(), {
+                            number: channel.number.toString(),
+                            name: channel.name,
+                            url: channel.url || `https://${this.state.baseDomain}/embed/stream-${channel.number}.php`,
+                            isFavorite: oldFavorites.some(f => f && f.number === channel.number),
+                            isHidden: oldHidden.includes(channel.number),
                             metadata: {
-                                time: '',
-                                event: '',
-                                sport: 'General',
-                                rawText: `${channelData.name} (CH-${number})`
+                                time: channel.time || '',
+                                event: channel.event || '',
+                                sport: channel.sport || 'General',
+                                rawText: channel.rawText || `${channel.name} (CH-${channel.number})`
                             }
                         });
                     }
                 });
 
+                // 2. Procesar canales automáticos
+                Object.entries(oldAuto).forEach(([number, channelData]) => {
+                    if (channelData && channelData.name) {
+                        if (!unifiedChannels.has(number)) {
+                            unifiedChannels.set(number, {
+                                number: number.toString(),
+                                name: channelData.name,
+                                url: channelData.url || `https://${this.state.baseDomain}/embed/stream-${number}.php`,
+                                isFavorite: oldFavorites.some(f => f && f.number === number),
+                                isHidden: oldHidden.includes(number),
+                                metadata: {
+                                    time: '',
+                                    event: '',
+                                    sport: 'General',
+                                    rawText: `${channelData.name} (CH-${number})`
+                                }
+                            });
+                        }
+                    }
+                });
+
+                // 3. Procesar favoritos huérfanos
                 oldFavorites.forEach(fav => {
-                    if (!unifiedChannels.has(fav.number)) {
+                    if (fav && fav.number && fav.name && !unifiedChannels.has(fav.number)) {
                         unifiedChannels.set(fav.number, {
-                            number: fav.number,
+                            number: fav.number.toString(),
                             name: fav.name,
                             url: `https://${this.state.baseDomain}/embed/stream-${fav.number}.php`,
                             isFavorite: true,
                             isHidden: oldHidden.includes(fav.number),
-                            isOrphanFavorite: true,
                             metadata: {
                                 time: '',
                                 event: '',
@@ -916,11 +942,16 @@
 
                 this.state.channels = Array.from(unifiedChannels.values());
                 localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
+                
+                // Limpiar datos antiguos
                 localStorage.removeItem('daddyliveFavorites');
                 localStorage.removeItem('hiddenChannels');
                 localStorage.removeItem('autoChannels');
                 localStorage.removeItem('daddyliveBackup');
+                
                 console.log('Migración completada. Canales:', this.state.channels.length);
+                this.updateChannelCount();
+                this.renderChannels();
             }
 
             initializeDOM() {
@@ -1113,9 +1144,9 @@
                 if (this.state.clickCount === 3) {
                     this.state.clickCount = 0;
                     if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
-                        const channel = this.state.channels.find(c => c.number === channelId);
-                        if (channel) {
-                            channel.isHidden = true;
+                        const channelIndex = this.state.channels.findIndex(c => c.number === channelId);
+                        if (channelIndex !== -1) {
+                            this.state.channels[channelIndex].isHidden = true;
                             localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
                             this.renderChannels();
                             this.showNotification('Canal ocultado');
@@ -1149,8 +1180,29 @@
                     if (data) {
                         const newChannels = this.extractChannels(data);
                         if (newChannels.length > 0) {
-                            this.state.channels = newChannels;
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(newChannels));
+                            // Preservar favoritos y canales ocultos existentes
+                            const existingChannels = new Map();
+                            this.state.channels.forEach(channel => {
+                                if (channel.isFavorite || channel.isHidden) {
+                                    existingChannels.set(channel.number, channel);
+                                }
+                            });
+
+                            // Fusionar con los nuevos canales
+                            const mergedChannels = newChannels.map(channel => {
+                                const existing = existingChannels.get(channel.number);
+                                if (existing) {
+                                    return {
+                                        ...channel,
+                                        isFavorite: existing.isFavorite,
+                                        isHidden: existing.isHidden
+                                    };
+                                }
+                                return channel;
+                            });
+
+                            this.state.channels = mergedChannels;
+                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
                             this.state.backupMode = false;
                             this.renderChannels();
                             this.updateSystemStatus('healthy');
@@ -1385,6 +1437,9 @@
                 this.elements.channelNumberDisplay.textContent = `CH-${channel.number}`;
                 this.elements.loading.classList.add('loading--active');
 
+                // Actualizar estado del botón de favoritos
+                this.elements.favoriteBtn.classList.toggle('control-btn--active', channel.isFavorite);
+
                 if (this.state.usePremium) {
                     const premiumUrls = this.findPremiumUrls(channel.number);
                     if (premiumUrls.length > 0) {
@@ -1482,13 +1537,6 @@
                 this.elements.channelsGrid.appendChild(fragment);
             }
 
-            /**
-             * Método unificado para filtrar canales
-             * @param {string} type - Tipo de filtro ('all', 'live', 'favorites')
-             * @param {string} searchTerm - Término de búsqueda
-             * @param {Array} emojiFilters - Filtros de emoji activos
-             * @returns {Array} Canales filtrados
-             */
             filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
                 // Paso 1: Filtrar canales ocultos
                 let filtered = this.state.channels.filter(channel => !channel.isHidden);
@@ -1517,10 +1565,6 @@
                 return filtered;
             }
 
-            /**
-             * Filtra canales que están en vivo o próximos a transmitir
-             * @private
-             */
             _applyLiveFilter(channels) {
                 const now = new Date();
                 return channels.filter(channel => {
@@ -1535,10 +1579,6 @@
                 });
             }
 
-            /**
-             * Aplica filtro de búsqueda a los canales
-             * @private
-             */
             _applySearchFilter(channels, searchTerm) {
                 const term = searchTerm.toLowerCase();
                 
@@ -1565,10 +1605,6 @@
                 );
             }
 
-            /**
-             * Aplica filtros de emoji a los canales
-             * @private
-             */
             _applyEmojiFilters(channels, emojiFilters) {
                 return channels.filter(channel => {
                     return emojiFilters.some(filter => {
@@ -1796,10 +1832,10 @@
 
                 if (!this.state.currentStream) return;
 
-                const channel = this.state.channels.find(c => c.number === this.state.currentStream.number);
-                if (channel) {
-                    channel.isFavorite = true;
-                    channel.name = favoriteName;
+                const channelIndex = this.state.channels.findIndex(c => c.number === this.state.currentStream.number);
+                if (channelIndex !== -1) {
+                    this.state.channels[channelIndex].isFavorite = true;
+                    this.state.channels[channelIndex].name = favoriteName;
                 } else {
                     this.state.channels.push({
                         number: this.state.currentStream.number,
@@ -1828,9 +1864,9 @@
             }
 
             removeFavorite(channelNumber) {
-                const channel = this.state.channels.find(c => c.number === channelNumber);
-                if (channel) {
-                    channel.isFavorite = false;
+                const channelIndex = this.state.channels.findIndex(c => c.number === channelNumber);
+                if (channelIndex !== -1) {
+                    this.state.channels[channelIndex].isFavorite = false;
                     localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
                 }
 
