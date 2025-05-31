@@ -850,7 +850,7 @@
                     isGrouped: localStorage.getItem('isGrouped') === 'true',
                     channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {}
                 };
-                this.activeEmojiFilters = this.state.activeEmojiFilters || [];
+                this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                 
                 // Cargar canales desde localStorage
                 const savedChannels = localStorage.getItem('daddyliveChannels');
@@ -1030,6 +1030,8 @@
 
             toggleEmojiFilter(filter, button) {
                 button.classList.toggle('emoji-filter-btn--active');
+                
+                // Actualizar ambos estados (local y persistente)
                 if (button.classList.contains('emoji-filter-btn--active')) {
                     if (!this.activeEmojiFilters.includes(filter)) {
                         this.activeEmojiFilters.push(filter);
@@ -1037,19 +1039,35 @@
                 } else {
                     this.activeEmojiFilters = this.activeEmojiFilters.filter(f => f !== filter);
                 }
+                
                 this.state.activeEmojiFilters = [...this.activeEmojiFilters];
                 localStorage.setItem('activeEmojiFilters', JSON.stringify(this.activeEmojiFilters));
-                this.renderChannels();
+                
+                // Limpiar el grid antes de renderizar
+                this.elements.channelsGrid.innerHTML = '';
+                
+                // Forzar renderizado con los nuevos filtros
+                this.prepareFilterIndexes();
+                this.renderChannels(true);
             }
 
             clearEmojiFilters() {
+                // Limpiar UI
                 document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
                     btn.classList.remove('emoji-filter-btn--active');
                 });
+                
+                // Limpiar ambos estados
                 this.activeEmojiFilters = [];
                 this.state.activeEmojiFilters = [];
                 localStorage.removeItem('activeEmojiFilters');
-                this.renderChannels();
+                
+                // Limpiar el grid antes de renderizar
+                this.elements.channelsGrid.innerHTML = '';
+                
+                // Forzar renderizado
+                this.prepareFilterIndexes();
+                this.renderChannels(true);
             }
 
             handleTripleClick(channelId) {
@@ -1064,35 +1082,24 @@
                 if (this.state.clickCount === 3) {
                     this.state.clickCount = 0;
                     if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
+                        // Actualizar el estado primero
+                        const updatedChannels = this.state.channels.map(channel => 
+                            channel.number === channelId ? { ...channel, isHidden: true } : channel
+                        );
+                        
+                        // Sincronizar estado y localStorage
+                        this.state.channels = updatedChannels;
+                        localStorage.setItem('daddyliveChannels', JSON.stringify(updatedChannels));
+                        
                         // Actualizar historial
                         if (this.state.channelHistory[channelId]) {
                             this.state.channelHistory[channelId].isHidden = true;
                             localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                         }
-
-                        // Actualizar lista de canales
-                        const channelIndex = this.state.channels.findIndex(c => c.number === channelId);
-                        if (channelIndex !== -1) {
-                            this.state.channels[channelIndex].isHidden = true;
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                        }
                         
-                        // Resetear filtros
-                        this.state.searchTerm = '';
-                        this.elements.searchInput.value = '';
-                        this.activeEmojiFilters = [];
-                        document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
-                            btn.classList.remove('emoji-filter-btn--active');
-                        });
-                        localStorage.removeItem('activeEmojiFilters');
-                        localStorage.removeItem('searchTerm');
-                        
-                        // Forzar reconstrucción de índices
+                        // Forzar re-renderizado inmediato
                         this.prepareFilterIndexes();
-                        
-                        // Renderizar con limpieza completa
-                        this.elements.channelsGrid.innerHTML = '';
-                        this.renderChannels();
+                        this.renderChannels(true);
                         
                         this.showNotification('Canal ocultado');
                     }
@@ -1497,37 +1504,49 @@
             }
 
             applyFilter(filter) {
+                // Actualizar el estado persistente
                 this.state.currentFilter = filter;
                 localStorage.setItem('currentFilter', filter);
 
+                // Actualizar las clases activas en los botones
                 this.elements.filterAll.classList.remove('filter-button--active');
                 this.elements.filterLive.classList.remove('filter-button--active');
                 this.elements.filterFavorites.classList.remove('filter-button--active');
 
-                if (filter === 'all') {
-                    this.elements.filterAll.classList.add('filter-button--active');
-                } else if (filter === 'live') {
-                    this.elements.filterLive.classList.add('filter-button--active');
-                } else if (filter === 'favorites') {
-                    this.elements.filterFavorites.classList.add('filter-button--active');
+                // Activar el botón correspondiente
+                const activeButtonMap = {
+                    'all': this.elements.filterAll,
+                    'live': this.elements.filterLive,
+                    'favorites': this.elements.filterFavorites
+                };
+                
+                if (activeButtonMap[filter]) {
+                    activeButtonMap[filter].classList.add('filter-button--active');
                 }
 
+                // Limpiar el grid antes de renderizar
+                this.elements.channelsGrid.innerHTML = '';
+                
+                // Forzar el renderizado con el nuevo filtro
                 this.prepareFilterIndexes();
-                this.renderChannels();
+                this.renderChannels(true);
             }
 
             prepareFilterIndexes() {
-                this.state.searchIndex = this.state.channels.map(channel => ({
-                    id: channel.number,
-                    text: `${channel.name} ${channel.number} ${channel.metadata?.event || ''} ${channel.metadata?.time || ''} ${channel.metadata?.sport || ''}`.toLowerCase()
-                }));
+                this.state.searchIndex = this.state.channels
+                    .filter(channel => !channel.isHidden) // Excluir canales ocultos
+                    .map(channel => ({
+                        id: channel.number,
+                        text: `${channel.name} ${channel.number} ${channel.metadata?.event || ''} ${channel.metadata?.time || ''} ${channel.metadata?.sport || ''}`.toLowerCase()
+                    }));
             }
 
             renderChannels(forceClear = false) {
                 if (this.state.isLoading) return;
                 
-                // Limpiar siempre el grid, no solo cuando se fuerza
-                this.elements.channelsGrid.innerHTML = '';
+                if (forceClear) {
+                    this.elements.channelsGrid.innerHTML = '';
+                }
 
                 const filteredChannels = this.filterChannels(
                     this.state.currentFilter, 
@@ -1571,19 +1590,20 @@
             }
 
             filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
-                // Primero filtrar siempre los canales ocultos
-                const visibleChannels = this.state.channels.filter(channel => !channel.isHidden);
+                // Filtro PRIMARIO: excluir canales ocultos
+                let filtered = this.state.channels.filter(channel => !channel.isHidden);
                 
-                // Si no hay canales visibles, retornar array vacío
-                if (visibleChannels.length === 0) return [];
-                
-                // Luego aplicar otros filtros
-                let filtered = visibleChannels;
-
                 // Aplicar filtro por tipo
                 switch (type) {
                     case 'live':
-                        filtered = this._applyLiveFilter(filtered);
+                        filtered = filtered.filter(channel => {
+                            if (!channel.metadata?.time) return false;
+                            const [hours, minutes] = channel.metadata.time.split(':').map(Number);
+                            const eventTime = new Date();
+                            eventTime.setHours(hours, minutes, 0, 0);
+                            const diffMinutes = (new Date() - eventTime) / (1000 * 60);
+                            return diffMinutes >= -15 && diffMinutes <= 180;
+                        });
                         break;
                     case 'favorites':
                         filtered = filtered.filter(channel => channel.isFavorite);
@@ -1592,71 +1612,42 @@
 
                 // Aplicar filtro de búsqueda
                 if (searchTerm) {
-                    filtered = this._applySearchFilter(filtered, searchTerm);
+                    const term = searchTerm.toLowerCase();
+                    if (/^#?\d+$/.test(term)) {
+                        const channelNumber = term.replace('#', '');
+                        filtered = filtered.filter(channel => channel.number === channelNumber);
+                    } else if (/^\d{1,2}:\d{2}$/.test(term)) {
+                        filtered = filtered.filter(channel => 
+                            channel.metadata?.time && channel.metadata.time.toLowerCase().includes(term)
+                        );
+                    } else {
+                        filtered = filtered.filter(channel => 
+                            channel.name.toLowerCase().includes(term) ||
+                            (channel.metadata?.event && channel.metadata.event.toLowerCase().includes(term)) ||
+                            channel.number.includes(term) ||
+                            (channel.metadata?.sport && channel.metadata.sport.toLowerCase().includes(term))
+                        );
+                    }
                 }
 
                 // Aplicar filtros de emoji
                 if (emojiFilters.length > 0) {
-                    filtered = this._applyEmojiFilters(filtered, emojiFilters);
+                    filtered = filtered.filter(channel => {
+                        return emojiFilters.some(filter => {
+                            if (filter === 'Spain ES Movistar M+') {
+                                return channel.name.includes(' Spain ') ||
+                                    channel.name.includes(' ES ') ||
+                                    channel.name.includes('Movistar') ||
+                                    channel.name.includes('M+');
+                            }
+                            return (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
+                                (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
+                                channel.name.includes(filter);
+                        });
+                    });
                 }
 
                 return filtered;
-            }
-
-            _applyLiveFilter(channels) {
-                const now = new Date();
-                return channels.filter(channel => {
-                    if (!channel.metadata?.time) return false;
-                    
-                    const [hours, minutes] = channel.metadata.time.split(':').map(Number);
-                    const eventTime = new Date();
-                    eventTime.setHours(hours, minutes, 0, 0);
-                    const diffMinutes = (now - eventTime) / (1000 * 60);
-                    
-                    return diffMinutes >= -15 && diffMinutes <= 180;
-                });
-            }
-
-            _applySearchFilter(channels, searchTerm) {
-                const term = searchTerm.toLowerCase();
-                
-                // Búsqueda por número de canal (#123 o 123)
-                if (/^#?\d+$/.test(term)) {
-                    const channelNumber = term.replace('#', '');
-                    return channels.filter(channel => channel.number === channelNumber);
-                }
-                
-                // Búsqueda por hora (15:30)
-                if (/^\d{1,2}:\d{2}$/.test(term)) {
-                    return channels.filter(channel => 
-                        channel.metadata?.time && channel.metadata.time.toLowerCase().includes(term)
-                    );
-                }
-                
-                // Búsqueda general
-                return channels.filter(channel => 
-                    channel.name.toLowerCase().includes(term) ||
-                    (channel.metadata?.event && channel.metadata.event.toLowerCase().includes(term)) ||
-                    channel.number.includes(term) ||
-                    (channel.metadata?.time && channel.metadata.time.toLowerCase().includes(term)) ||
-                    (channel.metadata?.sport && channel.metadata.sport.toLowerCase().includes(term))
-                );
-            }
-
-            _applyEmojiFilters(channels, emojiFilters) {
-                return channels.filter(channel => {
-                    return emojiFilters.some(filter => {
-                        if (filter === 'Spain ES Movistar M+') {
-                            return channel.name.includes(' Spain ') ||
-                                channel.name.includes(' ES ') ||
-                                channel.name.includes('Movistar') ||
-                                channel.name.includes('M+');
-                        }
-                        return (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
-                            (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
-                            channel.name.includes(filter);
-                    });
-                });
             }
 
             createChannelCard(channel, isGrouped = false) {
@@ -1957,7 +1948,7 @@
             }
 
             updateChannelCount() {
-                const count = this.state.channels.length;
+                const count = this.state.channels.filter(c => !c.isHidden).length;
                 this.elements.channelCount.textContent = `${count} canales`;
             }
 
@@ -1966,7 +1957,7 @@
 
                 const currentNumber = parseInt(this.state.currentStream.number);
                 const newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
-                const nextChannel = this.state.channels.find(c => c.number === newNumber.toString());
+                const nextChannel = this.state.channels.find(c => c.number === newNumber.toString() && !c.isHidden);
 
                 if (nextChannel) {
                     this.playChannel(nextChannel);
@@ -2095,7 +2086,7 @@
 
                 if (/^#?\d+$/.test(value)) {
                     const channelNumber = value.replace('#', '');
-                    const channel = this.state.channels.find(c => c.number === channelNumber);
+                    const channel = this.state.channels.find(c => c.number === channelNumber && !c.isHidden);
                     
                     if (channel) {
                         this.playChannel(channel);
@@ -2184,14 +2175,20 @@
             }
 
             restoreFilterState() {
+                // Restaurar filtro principal (Todos/Directo/Favoritos)
                 if (this.state.currentFilter) {
                     this.applyFilter(this.state.currentFilter);
+                } else {
+                    // Valor por defecto si no hay filtro guardado
+                    this.applyFilter('all');
                 }
                 
+                // Restaurar término de búsqueda
                 if (this.state.searchTerm) {
                     this.elements.searchInput.value = this.state.searchTerm;
                 }
                 
+                // Restaurar filtros de emoji
                 if (this.state.activeEmojiFilters && this.state.activeEmojiFilters.length > 0) {
                     this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                     document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
