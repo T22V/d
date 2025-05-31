@@ -847,7 +847,8 @@
                     searchIndex: null,
                     activeEmojiFilters: JSON.parse(localStorage.getItem('activeEmojiFilters')) || [],
                     searchTerm: localStorage.getItem('searchTerm') || '',
-                    isGrouped: localStorage.getItem('isGrouped') === 'true'
+                    isGrouped: localStorage.getItem('isGrouped') === 'true',
+                    channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {}
                 };
                 this.activeEmojiFilters = this.state.activeEmojiFilters || [];
                 
@@ -1063,17 +1064,18 @@
                 if (this.state.clickCount === 3) {
                     this.state.clickCount = 0;
                     if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
-                        // Crear una nueva copia completamente inmutable del estado
-                        const updatedChannels = this.state.channels.map(channel => {
-                            if (channel.number === channelId) {
-                                return {...channel, isHidden: true};
-                            }
-                            return channel;
-                        });
+                        // Actualizar historial
+                        if (this.state.channelHistory[channelId]) {
+                            this.state.channelHistory[channelId].isHidden = true;
+                            localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
+                        }
 
-                        // Actualizar el estado y localStorage
-                        this.state.channels = updatedChannels;
-                        localStorage.setItem('daddyliveChannels', JSON.stringify(updatedChannels));
+                        // Actualizar lista de canales
+                        const channelIndex = this.state.channels.findIndex(c => c.number === channelId);
+                        if (channelIndex !== -1) {
+                            this.state.channels[channelIndex].isHidden = true;
+                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
+                        }
                         
                         // Resetear filtros
                         this.state.searchTerm = '';
@@ -1122,29 +1124,37 @@
                     if (data) {
                         const newChannels = this.extractChannels(data);
                         if (newChannels.length > 0) {
-                            // Preservar favoritos y canales ocultos existentes
-                            const existingChannels = new Map();
-                            this.state.channels.forEach(channel => {
-                                if (channel.isFavorite || channel.isHidden) {
-                                    existingChannels.set(channel.number, channel);
-                                }
-                            });
-
-                            // Fusionar con los nuevos canales
-                            const mergedChannels = newChannels.map(channel => {
-                                const existing = existingChannels.get(channel.number);
-                                if (existing) {
+                            // Actualizar historial de canales
+                            this.updateChannelHistory(newChannels);
+                            
+                            // Cargar canales guardados
+                            const savedChannels = JSON.parse(localStorage.getItem('daddyliveChannels')) || [];
+                            
+                            // Fusionar canales nuevos con guardados
+                            const mergedChannels = newChannels.map(newChannel => {
+                                const savedChannel = savedChannels.find(sc => sc.number === newChannel.number);
+                                if (savedChannel) {
                                     return {
-                                        ...channel,
-                                        isFavorite: existing.isFavorite,
-                                        isHidden: existing.isHidden
+                                        ...newChannel,
+                                        name: savedChannel.name, // Mantener nombre personalizado
+                                        isFavorite: savedChannel.isFavorite,
+                                        isHidden: savedChannel.isHidden,
+                                        lastUpdated: savedChannel.lastUpdated || new Date().toISOString(),
+                                        isCustom: savedChannel.isCustom || false
                                     };
                                 }
-                                return channel;
+                                return newChannel;
                             });
-
-                            this.state.channels = mergedChannels;
+                            
+                            // Añadir canales favoritos personalizados que no están en la lista nueva
+                            const customFavorites = savedChannels.filter(sc => 
+                                sc.isFavorite && 
+                                !newChannels.some(nc => nc.number === sc.number)
+                            );
+                            
+                            this.state.channels = [...mergedChannels, ...customFavorites];
                             localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
+                            
                             this.state.backupMode = false;
                             this.renderChannels();
                             this.updateSystemStatus('healthy');
@@ -1161,6 +1171,41 @@
                     }
                 } finally {
                     this.state.isLoading = false;
+                }
+            }
+
+            updateChannelHistory(newChannels) {
+                const history = { ...this.state.channelHistory };
+                let hasUpdates = false;
+
+                newChannels.forEach(channel => {
+                    if (!history[channel.number]) {
+                        history[channel.number] = {
+                            firstSeen: new Date().toISOString(),
+                            lastSeen: new Date().toISOString(),
+                            names: [channel.name],
+                            isFavorite: false,
+                            isHidden: false,
+                            playCount: 0,
+                            lastPlayed: null
+                        };
+                        hasUpdates = true;
+                    } else {
+                        // Actualizar información existente
+                        const existing = history[channel.number];
+                        existing.lastSeen = new Date().toISOString();
+                        
+                        // Registrar nuevo nombre si es diferente
+                        if (!existing.names.includes(channel.name)) {
+                            existing.names.push(channel.name);
+                            hasUpdates = true;
+                        }
+                    }
+                });
+
+                if (hasUpdates) {
+                    this.state.channelHistory = history;
+                    localStorage.setItem('channelHistory', JSON.stringify(history));
                 }
             }
 
@@ -1372,6 +1417,9 @@
                     this.state.hls = null;
                 }
 
+                // Actualizar historial de reproducción
+                this.updatePlayHistory(channel.number);
+
                 this.state.currentStream = channel;
                 this.elements.playerContainer.classList.add('player-container--active');
                 this.elements.playerControls.classList.add('player-controls--active');
@@ -1401,6 +1449,26 @@
                 }
 
                 this.playOriginalChannel(channel);
+            }
+
+            updatePlayHistory(channelNumber) {
+                if (!this.state.channelHistory[channelNumber]) {
+                    this.state.channelHistory[channelNumber] = {
+                        firstSeen: new Date().toISOString(),
+                        lastSeen: new Date().toISOString(),
+                        names: [],
+                        isFavorite: false,
+                        isHidden: false,
+                        playCount: 0,
+                        lastPlayed: null
+                    };
+                }
+                
+                this.state.channelHistory[channelNumber].lastPlayed = new Date().toISOString();
+                this.state.channelHistory[channelNumber].playCount = 
+                    (this.state.channelHistory[channelNumber].playCount || 0) + 1;
+                
+                localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
             }
 
             playOriginalChannel(channel) {
@@ -1802,38 +1870,66 @@
 
                 if (!this.state.currentStream) return;
 
-                const channelIndex = this.state.channels.findIndex(c => c.number === this.state.currentStream.number);
-                if (channelIndex !== -1) {
-                    this.state.channels[channelIndex].isFavorite = true;
-                    this.state.channels[channelIndex].name = favoriteName;
-                } else {
-                    this.state.channels.push({
-                        number: this.state.currentStream.number,
-                        name: favoriteName,
+                // Crear una copia completa del canal actual
+                const favoriteChannel = {
+                    ...this.state.currentStream,
+                    name: favoriteName,
+                    isFavorite: true,
+                    isHidden: false,
+                    lastUpdated: new Date().toISOString(),
+                    isCustom: true // Marcar como canal personalizado
+                };
+
+                // Actualizar historial
+                const channelNumber = this.state.currentStream.number;
+                if (!this.state.channelHistory[channelNumber]) {
+                    this.state.channelHistory[channelNumber] = {
+                        firstSeen: new Date().toISOString(),
+                        lastSeen: new Date().toISOString(),
+                        names: [favoriteName],
                         isFavorite: true,
                         isHidden: false,
-                        url: `https://${this.state.baseDomain}/embed/stream-${this.state.currentStream.number}.php`,
-                        metadata: {
-                            time: '',
-                            event: '',
-                            sport: 'General',
-                            rawText: `${favoriteName} (CH-${this.state.currentStream.number})`
-                        }
-                    });
+                        playCount: 0,
+                        lastPlayed: null
+                    };
+                } else {
+                    this.state.channelHistory[channelNumber].isFavorite = true;
+                    this.state.channelHistory[channelNumber].lastSeen = new Date().toISOString();
+                    if (!this.state.channelHistory[channelNumber].names.includes(favoriteName)) {
+                        this.state.channelHistory[channelNumber].names.push(favoriteName);
+                    }
                 }
 
+                // Guardar en localStorage
+                localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
+                
+                // Actualizar lista de canales
+                const channelIndex = this.state.channels.findIndex(c => c.number === this.state.currentStream.number);
+                if (channelIndex !== -1) {
+                    this.state.channels[channelIndex] = favoriteChannel;
+                } else {
+                    this.state.channels.push(favoriteChannel);
+                }
+                
                 localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
+                
                 this.elements.favoriteBtn.classList.add('control-btn--active');
+                this.hideFavoriteModal();
+                this.showNotification('Favorito guardado permanentemente');
                 
                 if (this.state.currentFilter === 'favorites') {
                     this.renderChannels();
                 }
-                
-                this.hideFavoriteModal();
-                this.showNotification('Favorito guardado');
             }
 
             removeFavorite(channelNumber) {
+                // Actualizar historial
+                if (this.state.channelHistory[channelNumber]) {
+                    this.state.channelHistory[channelNumber].isFavorite = false;
+                    localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
+                }
+
+                // Actualizar lista de canales
                 const channelIndex = this.state.channels.findIndex(c => c.number === channelNumber);
                 if (channelIndex !== -1) {
                     this.state.channels[channelIndex].isFavorite = false;
