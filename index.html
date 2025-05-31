@@ -561,6 +561,26 @@
             display: none;
             animation: slideIn 0.3s ease-out;
         }
+        .no-results-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+        .reset-filters-btn {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .reset-filters-btn:hover {
+            background: var(--primary-dark);
+        }
         @keyframes slideIn {
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -831,7 +851,7 @@
                 };
                 this.activeEmojiFilters = this.state.activeEmojiFilters || [];
                 
-                // Primero intentar cargar los canales del nuevo sistema
+                // Cargar canales desde localStorage
                 const savedChannels = localStorage.getItem('daddyliveChannels');
                 if (savedChannels) {
                     try {
@@ -841,9 +861,6 @@
                         console.error('Error al parsear canales:', e);
                         this.state.channels = [];
                     }
-                } else {
-                    // Si no hay datos en el nuevo sistema, verificar migración
-                    this.checkMigration();
                 }
                 
                 this.initializeDOM();
@@ -854,104 +871,6 @@
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
                 this.setupExternalPlayerButtons();
                 this.restoreFilterState();
-            }
-
-            checkMigration() {
-                // Verificar si hay datos antiguos que necesiten migración
-                const hasOldFavorites = localStorage.getItem('daddyliveFavorites');
-                const hasOldHidden = localStorage.getItem('hiddenChannels');
-                const hasOldAuto = localStorage.getItem('autoChannels');
-                const hasOldBackup = localStorage.getItem('daddyliveBackup');
-                
-                if (hasOldFavorites || hasOldHidden || hasOldAuto || hasOldBackup) {
-                    console.log('Datos antiguos encontrados, iniciando migración...');
-                    this.migrateToUnifiedStructure();
-                } else {
-                    console.log('No se encontraron datos antiguos que requieran migración');
-                    this.state.channels = [];
-                }
-            }
-
-            migrateToUnifiedStructure() {
-                console.log('Iniciando migración de datos...');
-                const oldFavorites = JSON.parse(localStorage.getItem('daddyliveFavorites')) || [];
-                const oldHidden = JSON.parse(localStorage.getItem('hiddenChannels')) || [];
-                const oldAuto = JSON.parse(localStorage.getItem('autoChannels')) || {};
-                const oldBackup = JSON.parse(localStorage.getItem('daddyliveBackup')) || [];
-                
-                const unifiedChannels = new Map();
-                
-                // 1. Procesar canales de backup
-                oldBackup.forEach(channel => {
-                    if (channel && channel.number && channel.name) {
-                        unifiedChannels.set(channel.number.toString(), {
-                            number: channel.number.toString(),
-                            name: channel.name,
-                            url: channel.url || `https://${this.state.baseDomain}/embed/stream-${channel.number}.php`,
-                            isFavorite: oldFavorites.some(f => f && f.number === channel.number),
-                            isHidden: oldHidden.includes(channel.number),
-                            metadata: {
-                                time: channel.time || '',
-                                event: channel.event || '',
-                                sport: channel.sport || 'General',
-                                rawText: channel.rawText || `${channel.name} (CH-${channel.number})`
-                            }
-                        });
-                    }
-                });
-
-                // 2. Procesar canales automáticos
-                Object.entries(oldAuto).forEach(([number, channelData]) => {
-                    if (channelData && channelData.name) {
-                        if (!unifiedChannels.has(number)) {
-                            unifiedChannels.set(number, {
-                                number: number.toString(),
-                                name: channelData.name,
-                                url: channelData.url || `https://${this.state.baseDomain}/embed/stream-${number}.php`,
-                                isFavorite: oldFavorites.some(f => f && f.number === number),
-                                isHidden: oldHidden.includes(number),
-                                metadata: {
-                                    time: '',
-                                    event: '',
-                                    sport: 'General',
-                                    rawText: `${channelData.name} (CH-${number})`
-                                }
-                            });
-                        }
-                    }
-                });
-
-                // 3. Procesar favoritos huérfanos
-                oldFavorites.forEach(fav => {
-                    if (fav && fav.number && fav.name && !unifiedChannels.has(fav.number)) {
-                        unifiedChannels.set(fav.number, {
-                            number: fav.number.toString(),
-                            name: fav.name,
-                            url: `https://${this.state.baseDomain}/embed/stream-${fav.number}.php`,
-                            isFavorite: true,
-                            isHidden: oldHidden.includes(fav.number),
-                            metadata: {
-                                time: '',
-                                event: '',
-                                sport: 'General',
-                                rawText: `${fav.name} (CH-${fav.number})`
-                            }
-                        });
-                    }
-                });
-
-                this.state.channels = Array.from(unifiedChannels.values());
-                localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                
-                // Limpiar datos antiguos
-                localStorage.removeItem('daddyliveFavorites');
-                localStorage.removeItem('hiddenChannels');
-                localStorage.removeItem('autoChannels');
-                localStorage.removeItem('daddyliveBackup');
-                
-                console.log('Migración completada. Canales:', this.state.channels.length);
-                this.updateChannelCount();
-                this.renderChannels();
             }
 
             initializeDOM() {
@@ -1144,13 +1063,36 @@
                 if (this.state.clickCount === 3) {
                     this.state.clickCount = 0;
                     if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
-                        const channelIndex = this.state.channels.findIndex(c => c.number === channelId);
-                        if (channelIndex !== -1) {
-                            this.state.channels[channelIndex].isHidden = true;
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                            this.renderChannels();
-                            this.showNotification('Canal ocultado');
-                        }
+                        // Crear una nueva copia completamente inmutable del estado
+                        const updatedChannels = this.state.channels.map(channel => {
+                            if (channel.number === channelId) {
+                                return {...channel, isHidden: true};
+                            }
+                            return channel;
+                        });
+
+                        // Actualizar el estado y localStorage
+                        this.state.channels = updatedChannels;
+                        localStorage.setItem('daddyliveChannels', JSON.stringify(updatedChannels));
+                        
+                        // Resetear filtros
+                        this.state.searchTerm = '';
+                        this.elements.searchInput.value = '';
+                        this.activeEmojiFilters = [];
+                        document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
+                            btn.classList.remove('emoji-filter-btn--active');
+                        });
+                        localStorage.removeItem('activeEmojiFilters');
+                        localStorage.removeItem('searchTerm');
+                        
+                        // Forzar reconstrucción de índices
+                        this.prepareFilterIndexes();
+                        
+                        // Renderizar con limpieza completa
+                        this.elements.channelsGrid.innerHTML = '';
+                        this.renderChannels();
+                        
+                        this.showNotification('Canal ocultado');
                     }
                 }
             }
@@ -1237,7 +1179,7 @@
                         'Football': 'Fútbol',
                         'Soccer': 'Fútbol',
                         'Basketball': 'Baloncesto',
-                        'Tennis': 'Tenis',
+                        'Tenis': 'Tenis',
                         'Baseball': 'Béisbol',
                         'Boxing': 'Boxeo',
                         'Handball': 'Balonmano',
@@ -1297,7 +1239,7 @@
                                             time: adjustedTime || '',
                                             event: eventText.replace(timeRegex, '').trim(),
                                             sport: currentSport,
-                                            rawText: linkText
+                                            rawText: `${channelName} (CH-${channelNumber})`
                                         }
                                     });
                                     validLinkChannels++;
@@ -1513,13 +1455,36 @@
                 }));
             }
 
-            renderChannels() {
+            renderChannels(forceClear = false) {
                 if (this.state.isLoading) return;
-                const filteredChannels = this.filterChannels(this.state.currentFilter, this.state.searchTerm, this.activeEmojiFilters);
+                
+                // Limpiar siempre el grid, no solo cuando se fuerza
                 this.elements.channelsGrid.innerHTML = '';
 
+                const filteredChannels = this.filterChannels(
+                    this.state.currentFilter, 
+                    this.state.searchTerm, 
+                    this.activeEmojiFilters
+                );
+
                 if (filteredChannels.length === 0) {
-                    this.elements.channelsGrid.innerHTML = '<p class="no-results">No se encontraron canales. Prueba con otros filtros.</p>';
+                    this.elements.channelsGrid.innerHTML = `
+                        <div class="no-results-message">
+                            <p>No se encontraron canales</p>
+                            ${this.state.searchTerm || this.activeEmojiFilters.length > 0 ? 
+                                '<button id="resetFiltersBtn" class="reset-filters-btn">Resetear filtros</button>' : ''
+                            }
+                        </div>
+                    `;
+                    
+                    if (document.getElementById('resetFiltersBtn')) {
+                        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+                            this.state.searchTerm = '';
+                            this.elements.searchInput.value = '';
+                            this.clearEmojiFilters();
+                            this.applyFilter('all');
+                        });
+                    }
                     return;
                 }
 
@@ -1538,10 +1503,16 @@
             }
 
             filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
-                // Paso 1: Filtrar canales ocultos
-                let filtered = this.state.channels.filter(channel => !channel.isHidden);
+                // Primero filtrar siempre los canales ocultos
+                const visibleChannels = this.state.channels.filter(channel => !channel.isHidden);
+                
+                // Si no hay canales visibles, retornar array vacío
+                if (visibleChannels.length === 0) return [];
+                
+                // Luego aplicar otros filtros
+                let filtered = visibleChannels;
 
-                // Paso 2: Aplicar filtro por tipo
+                // Aplicar filtro por tipo
                 switch (type) {
                     case 'live':
                         filtered = this._applyLiveFilter(filtered);
@@ -1549,15 +1520,14 @@
                     case 'favorites':
                         filtered = filtered.filter(channel => channel.isFavorite);
                         break;
-                    // 'all' no necesita filtrado adicional
                 }
 
-                // Paso 3: Aplicar filtro de búsqueda si existe
+                // Aplicar filtro de búsqueda
                 if (searchTerm) {
                     filtered = this._applySearchFilter(filtered, searchTerm);
                 }
 
-                // Paso 4: Aplicar filtros de emoji si existen
+                // Aplicar filtros de emoji
                 if (emojiFilters.length > 0) {
                     filtered = this._applyEmojiFilters(filtered, emojiFilters);
                 }
