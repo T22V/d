@@ -4,8 +4,6 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no" name="viewport"/>
     <title>📺</title>
-    <link href="https://daddylivehd1.my" rel="preconnect"/>
-    <link href="https://dokko1new.newkso.ru" rel="preconnect"/>
     <style>
         :root {
             --primary: #2563eb;
@@ -16,21 +14,16 @@
             --bg-dark: #0f172a;
             --bg-light: #f1f5f9;
             --card-bg: #ffffff;
-            --text-dark: #1e293b;
-            --text-light: #64748b;
+            --text: #1e293b;
             --border-color: #e2e8f0;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
             --radius-sm: 6px;
             --radius-md: 10px;
-            --radius-lg: 14px;
         }
         body.dark-mode {
             --bg-light: #0f172a;
             --card-bg: #1e293b;
-            --text-dark: #f8fafc;
-            --text-light: #94a3b8;
+            --text: #f8fafc;
             --border-color: #334155;
         }
         * {
@@ -41,7 +34,7 @@
         }
         body {
             background-color: var(--bg-light);
-            color: var(--text-dark);
+            color: var(--text);
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
             font-size: 14px;
@@ -53,7 +46,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
             position: relative;
             z-index: 10;
             order: 1;
@@ -127,7 +120,7 @@
             background: black;
             border-radius: var(--radius-md);
             overflow: hidden;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
             position: relative;
             width: 100%;
             height: calc(57vw + 40px);
@@ -137,10 +130,6 @@
         .player-container--active {
             display: block;
             animation: fadeIn 0.5s ease;
-        }
-        .player-container--sticky {
-            border-radius: 0;
-            box-shadow: none;
         }
         #videoFrame {
             position: absolute;
@@ -202,7 +191,7 @@
             left: 10px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-dark);
+            color: var(--text);
             font-size: 0.9rem;
             font-weight: 600;
             max-width: 150px;
@@ -215,7 +204,7 @@
             right: 10px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-dark);
+            color: var(--text);
             font-size: 0.9rem;
             font-weight: 600;
         }
@@ -238,7 +227,7 @@
             border-radius: var(--radius-sm);
             font-size: 0.9rem;
             background-color: var(--card-bg);
-            color: var(--text-dark);
+            color: var(--text);
             transition: all 0.3s ease;
         }
         .search-box__input:focus {
@@ -251,7 +240,7 @@
             left: 0.8rem;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-light);
+            color: var(--text);
             font-size: 0.9rem;
         }
         .filter-buttons {
@@ -265,7 +254,7 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
             background: var(--card-bg);
-            color: var(--text-dark);
+            color: var(--text);
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 500;
@@ -345,7 +334,7 @@
         }
         .channel-card:hover {
             transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
             border-color: var(--primary);
         }
         .channel-card--live::before {
@@ -365,7 +354,7 @@
         }
         .channel-time {
             font-size: 0.75rem;
-            color: var(--text-light);
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 5px;
@@ -387,7 +376,7 @@
         .channel-name {
             font-weight: 600;
             line-height: 1.3;
-            color: var(--text-dark);
+            color: var(--text);
             font-size: 0.95rem;
             text-align: center;
             flex-grow: 1;
@@ -400,7 +389,7 @@
         }
         .channel-event {
             font-size: 0.8rem;
-            color: var(--text-light);
+            color: var(--text);
             margin-top: 0.5rem;
         }
         .channel-sport {
@@ -431,7 +420,7 @@
         }
         .channel-group__title {
             font-weight: 600;
-            color: var(--text-dark);
+            color: var(--text);
         }
         .channel-group__sport {
             font-size: 0.8rem;
@@ -496,11 +485,11 @@
             padding: 1.2rem;
             width: 90%;
             max-width: 350px;
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-sm);
         }
         .modal__title {
             margin-bottom: 0.8rem;
-            color: var(--text-dark);
+            color: var(--text);
             font-size: 1.1rem;
         }
         .modal__input {
@@ -510,7 +499,7 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-sm);
             background: var(--card-bg);
-            color: var(--text-dark);
+            color: var(--text);
             font-size: 0.9rem;
         }
         .modal__actions {
@@ -532,7 +521,7 @@
         }
         .modal__btn--secondary {
             background: var(--border-color);
-            color: var(--text-dark);
+            color: var(--text);
         }
         .channel-list-item {
             padding: 0.8rem;
@@ -556,7 +545,7 @@
             padding: 0.5rem 1rem;
             border-radius: 20px;
             font-size: 0.8rem;
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
             z-index: 100;
             display: none;
             animation: slideIn 0.3s ease-out;
@@ -565,7 +554,7 @@
             grid-column: 1 / -1;
             text-align: center;
             padding: 2rem;
-            color: var(--text-light);
+            color: var(--text);
         }
         .reset-filters-btn {
             margin-top: 1rem;
@@ -585,14 +574,11 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* Media queries optimizadas */
         @media (max-width: 768px) {
             .header {
                 padding: 0.8rem;
-                justify-content: space-between;
-            }
-            .header__actions {
-                flex-direction: row;
-                gap: 15px;
             }
             .header-button {
                 width: 32px;
@@ -602,7 +588,8 @@
             .main-container {
                 padding: 0 0.8rem;
             }
-            .channels-grid {
+            .channels-grid,
+            .channel-group__content {
                 grid-template-columns: 1fr;
             }
             .filter-buttons {
@@ -613,10 +600,7 @@
                 min-width: auto;
                 flex: 1;
             }
-            .filter-button--favorites {
-                min-width: 36px !important;
-                flex: 0 0 36px !important;
-            }
+            .filter-button--favorites,
             .filter-button--clear {
                 min-width: 36px !important;
                 flex: 0 0 36px !important;
@@ -633,21 +617,13 @@
                 flex-wrap: nowrap;
                 gap: 8px;
                 padding: 8px;
-                align-items: center;
-                position: relative;
             }
-            .channel-info, .channel-number-display {
+            .channel-info, 
+            .channel-number-display {
                 position: static;
                 transform: none;
-                width: auto;
-                text-align: center;
-                max-width: 30%;
-                order: 0;
-                margin: 0;
                 font-size: 0.75rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                max-width: 30%;
             }
             .channel-info {
                 text-align: left;
@@ -661,10 +637,6 @@
                 width: 28px;
                 height: 28px;
                 font-size: 0.9rem;
-                flex-shrink: 0;
-            }
-            .channel-group__content {
-                grid-template-columns: 1fr;
             }
             .update-notification {
                 bottom: 120px;
@@ -673,13 +645,12 @@
                 text-align: center;
             }
         }
-        @media (min-width: 768px) and (orientation: landscape) {
-            .channels-grid {
-                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-                gap: 1.2rem;
-            }
+
+        @media (min-width: 768px) {
+            .channels-grid,
             .channel-group__content {
                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.2rem;
             }
             .channel-card {
                 padding: 1.2rem;
@@ -716,15 +687,14 @@
                 font-size: 1rem;
             }
         }
-        @media (min-width: 1024px) and (orientation: landscape) {
-            .channels-grid {
-                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            }
-            .channel-group__content {
-                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            }
+
+        @media (min-width: 1024px) {
             .main-container {
                 max-width: 95%;
+            }
+            .channels-grid,
+            .channel-group__content {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             }
         }
     </style>
@@ -852,7 +822,6 @@
                 };
                 this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                 
-                // Cargar canales desde localStorage
                 const savedChannels = localStorage.getItem('daddyliveChannels');
                 if (savedChannels) {
                     try {
@@ -866,7 +835,6 @@
                 
                 this.initializeDOM();
                 this.setupEventDelegation();
-                this.initializeServiceWorker();
                 this.setupIntersectionObserver();
                 this.debouncedRender = this.debounce(this.renderChannels.bind(this), 300);
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
@@ -1031,7 +999,6 @@
             toggleEmojiFilter(filter, button) {
                 button.classList.toggle('emoji-filter-btn--active');
                 
-                // Actualizar ambos estados (local y persistente)
                 if (button.classList.contains('emoji-filter-btn--active')) {
                     if (!this.activeEmojiFilters.includes(filter)) {
                         this.activeEmojiFilters.push(filter);
@@ -1043,29 +1010,21 @@
                 this.state.activeEmojiFilters = [...this.activeEmojiFilters];
                 localStorage.setItem('activeEmojiFilters', JSON.stringify(this.activeEmojiFilters));
                 
-                // Limpiar el grid antes de renderizar
                 this.elements.channelsGrid.innerHTML = '';
-                
-                // Forzar renderizado con los nuevos filtros
                 this.prepareFilterIndexes();
                 this.renderChannels(true);
             }
 
             clearEmojiFilters() {
-                // Limpiar UI
                 document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
                     btn.classList.remove('emoji-filter-btn--active');
                 });
                 
-                // Limpiar ambos estados
                 this.activeEmojiFilters = [];
                 this.state.activeEmojiFilters = [];
                 localStorage.removeItem('activeEmojiFilters');
                 
-                // Limpiar el grid antes de renderizar
                 this.elements.channelsGrid.innerHTML = '';
-                
-                // Forzar renderizado
                 this.prepareFilterIndexes();
                 this.renderChannels(true);
             }
@@ -1082,39 +1041,22 @@
                 if (this.state.clickCount === 3) {
                     this.state.clickCount = 0;
                     if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
-                        // Actualizar el estado primero
                         const updatedChannels = this.state.channels.map(channel => 
                             channel.number === channelId ? { ...channel, isHidden: true } : channel
                         );
                         
-                        // Sincronizar estado y localStorage
                         this.state.channels = updatedChannels;
                         localStorage.setItem('daddyliveChannels', JSON.stringify(updatedChannels));
                         
-                        // Actualizar historial
                         if (this.state.channelHistory[channelId]) {
                             this.state.channelHistory[channelId].isHidden = true;
                             localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                         }
                         
-                        // Forzar re-renderizado inmediato
                         this.prepareFilterIndexes();
                         this.renderChannels(true);
-                        
                         this.showNotification('Canal ocultado');
                     }
-                }
-            }
-
-            initializeServiceWorker() {
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        navigator.serviceWorker.register('/sw.js').then(registration => {
-                            console.log('ServiceWorker registration successful');
-                        }).catch(err => {
-                            console.log('ServiceWorker registration failed: ', err);
-                        });
-                    });
                 }
             }
 
@@ -1131,19 +1073,15 @@
                     if (data) {
                         const newChannels = this.extractChannels(data);
                         if (newChannels.length > 0) {
-                            // Actualizar historial de canales
                             this.updateChannelHistory(newChannels);
                             
-                            // Cargar canales guardados
                             const savedChannels = JSON.parse(localStorage.getItem('daddyliveChannels')) || [];
-                            
-                            // Fusionar canales nuevos con guardados
                             const mergedChannels = newChannels.map(newChannel => {
                                 const savedChannel = savedChannels.find(sc => sc.number === newChannel.number);
                                 if (savedChannel) {
                                     return {
                                         ...newChannel,
-                                        name: savedChannel.name, // Mantener nombre personalizado
+                                        name: savedChannel.name,
                                         isFavorite: savedChannel.isFavorite,
                                         isHidden: savedChannel.isHidden,
                                         lastUpdated: savedChannel.lastUpdated || new Date().toISOString(),
@@ -1153,7 +1091,6 @@
                                 return newChannel;
                             });
                             
-                            // Añadir canales favoritos personalizados que no están en la lista nueva
                             const customFavorites = savedChannels.filter(sc => 
                                 sc.isFavorite && 
                                 !newChannels.some(nc => nc.number === sc.number)
@@ -1198,11 +1135,8 @@
                         };
                         hasUpdates = true;
                     } else {
-                        // Actualizar información existente
                         const existing = history[channel.number];
                         existing.lastSeen = new Date().toISOString();
-                        
-                        // Registrar nuevo nombre si es diferente
                         if (!existing.names.includes(channel.name)) {
                             existing.names.push(channel.name);
                             hasUpdates = true;
@@ -1424,7 +1358,6 @@
                     this.state.hls = null;
                 }
 
-                // Actualizar historial de reproducción
                 this.updatePlayHistory(channel.number);
 
                 this.state.currentStream = channel;
@@ -1434,7 +1367,6 @@
                 this.elements.channelNumberDisplay.textContent = `CH-${channel.number}`;
                 this.elements.loading.classList.add('loading--active');
 
-                // Actualizar estado del botón de favoritos
                 this.elements.favoriteBtn.classList.toggle('control-btn--active', channel.isFavorite);
 
                 if (this.state.usePremium) {
@@ -1504,16 +1436,13 @@
             }
 
             applyFilter(filter) {
-                // Actualizar el estado persistente
                 this.state.currentFilter = filter;
                 localStorage.setItem('currentFilter', filter);
 
-                // Actualizar las clases activas en los botones
                 this.elements.filterAll.classList.remove('filter-button--active');
                 this.elements.filterLive.classList.remove('filter-button--active');
                 this.elements.filterFavorites.classList.remove('filter-button--active');
 
-                // Activar el botón correspondiente
                 const activeButtonMap = {
                     'all': this.elements.filterAll,
                     'live': this.elements.filterLive,
@@ -1524,17 +1453,14 @@
                     activeButtonMap[filter].classList.add('filter-button--active');
                 }
 
-                // Limpiar el grid antes de renderizar
                 this.elements.channelsGrid.innerHTML = '';
-                
-                // Forzar el renderizado con el nuevo filtro
                 this.prepareFilterIndexes();
                 this.renderChannels(true);
             }
 
             prepareFilterIndexes() {
                 this.state.searchIndex = this.state.channels
-                    .filter(channel => !channel.isHidden) // Excluir canales ocultos
+                    .filter(channel => !channel.isHidden)
                     .map(channel => ({
                         id: channel.number,
                         text: `${channel.name} ${channel.number} ${channel.metadata?.event || ''} ${channel.metadata?.time || ''} ${channel.metadata?.sport || ''}`.toLowerCase()
@@ -1590,10 +1516,8 @@
             }
 
             filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
-                // Filtro PRIMARIO: excluir canales ocultos
                 let filtered = this.state.channels.filter(channel => !channel.isHidden);
                 
-                // Aplicar filtro por tipo
                 switch (type) {
                     case 'live':
                         filtered = filtered.filter(channel => {
@@ -1610,7 +1534,6 @@
                         break;
                 }
 
-                // Aplicar filtro de búsqueda
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     if (/^#?\d+$/.test(term)) {
@@ -1630,7 +1553,6 @@
                     }
                 }
 
-                // Aplicar filtros de emoji
                 if (emojiFilters.length > 0) {
                     filtered = filtered.filter(channel => {
                         return emojiFilters.some(filter => {
@@ -1794,7 +1716,7 @@
                             <strong>${channel.name}</strong>
                             <span>${channel.number}</span>
                         </div>
-                        <div style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 0.2rem;">
+                        <div style="font-size: 0.9rem; color: var(--text); margin-bottom: 0.2rem;">
                             ${channel.metadata?.time || 'LIVE'} ${channel.metadata?.event || ''}
                         </div>
                         <div style="font-size: 0.8rem; color: var(--primary);">
@@ -1821,7 +1743,7 @@
                             <strong>${this.state.currentStream.name}</strong>
                             <span>${this.state.currentStream.number}</span>
                         </div>
-                        <div style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 0.2rem;">
+                        <div style="font-size: 0.9rem; color: var(--text); margin-bottom: 0.2rem;">
                             ${this.state.currentStream.metadata?.time || 'LIVE'} ${this.state.currentStream.metadata?.event || ''}
                         </div>
                         <div style="font-size: 0.8rem; color: var(--primary);">
@@ -1861,17 +1783,15 @@
 
                 if (!this.state.currentStream) return;
 
-                // Crear una copia completa del canal actual
                 const favoriteChannel = {
                     ...this.state.currentStream,
                     name: favoriteName,
                     isFavorite: true,
                     isHidden: false,
                     lastUpdated: new Date().toISOString(),
-                    isCustom: true // Marcar como canal personalizado
+                    isCustom: true
                 };
 
-                // Actualizar historial
                 const channelNumber = this.state.currentStream.number;
                 if (!this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber] = {
@@ -1891,10 +1811,8 @@
                     }
                 }
 
-                // Guardar en localStorage
                 localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                 
-                // Actualizar lista de canales
                 const channelIndex = this.state.channels.findIndex(c => c.number === this.state.currentStream.number);
                 if (channelIndex !== -1) {
                     this.state.channels[channelIndex] = favoriteChannel;
@@ -1914,13 +1832,11 @@
             }
 
             removeFavorite(channelNumber) {
-                // Actualizar historial
                 if (this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber].isFavorite = false;
                     localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                 }
 
-                // Actualizar lista de canales
                 const channelIndex = this.state.channels.findIndex(c => c.number === channelNumber);
                 if (channelIndex !== -1) {
                     this.state.channels[channelIndex].isFavorite = false;
@@ -2175,20 +2091,16 @@
             }
 
             restoreFilterState() {
-                // Restaurar filtro principal (Todos/Directo/Favoritos)
                 if (this.state.currentFilter) {
                     this.applyFilter(this.state.currentFilter);
                 } else {
-                    // Valor por defecto si no hay filtro guardado
                     this.applyFilter('all');
                 }
                 
-                // Restaurar término de búsqueda
                 if (this.state.searchTerm) {
                     this.elements.searchInput.value = this.state.searchTerm;
                 }
                 
-                // Restaurar filtros de emoji
                 if (this.state.activeEmojiFilters && this.state.activeEmojiFilters.length > 0) {
                     this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                     document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
