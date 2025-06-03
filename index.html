@@ -1091,10 +1091,21 @@
                                 return newChannel;
                             });
                             
-                            const customFavorites = savedChannels.filter(sc => 
-                                sc.isFavorite && 
-                                !newChannels.some(nc => nc.number === sc.number)
-                            );
+                            // MODIFICACIÓN: Limpiar eventos/hora en favoritos no actualizados
+                            const customFavorites = savedChannels
+                                .filter(sc => 
+                                    sc.isFavorite && 
+                                    !newChannels.some(nc => nc.number === sc.number)
+                                )
+                                .map(fav => ({
+                                    ...fav,
+                                    metadata: {
+                                        ...fav.metadata,
+                                        event: '', // Borrar evento antiguo
+                                        time: '',  // Borrar hora antigua
+                                        sport: fav.metadata?.sport || 'General' // Mantener deporte si existe
+                                    }
+                                }));
                             
                             this.state.channels = [...mergedChannels, ...customFavorites];
                             localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
