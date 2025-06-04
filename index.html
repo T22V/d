@@ -1091,7 +1091,7 @@
                                 return newChannel;
                             });
                             
-                            // MODIFICACIÓN: Limpiar eventos/hora en favoritos no actualizados
+                            // Limpiar eventos/hora en favoritos no actualizados
                             const customFavorites = savedChannels
                                 .filter(sc => 
                                     sc.isFavorite && 
@@ -1446,6 +1446,77 @@
                 }
             }
 
+            filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
+                let filtered = this.state.channels.filter(channel => !channel.isHidden);
+                
+                // Eliminar canales duplicados sin evento (solo mantener uno por número de canal)
+                const seenChannels = new Set();
+                filtered = filtered.filter(channel => {
+                    const hasNoEvent = !channel.metadata?.event || channel.metadata.event.trim() === '';
+                    if (hasNoEvent) {
+                        if (seenChannels.has(channel.number)) {
+                            return false; // Ya hemos visto este canal sin evento
+                        }
+                        seenChannels.add(channel.number);
+                    }
+                    return true;
+                });
+
+                // Aplicar filtros adicionales
+                switch (type) {
+                    case 'live':
+                        filtered = filtered.filter(channel => {
+                            if (!channel.metadata?.time) return false;
+                            const [hours, minutes] = channel.metadata.time.split(':').map(Number);
+                            const eventTime = new Date();
+                            eventTime.setHours(hours, minutes, 0, 0);
+                            const diffMinutes = (new Date() - eventTime) / (1000 * 60);
+                            return diffMinutes >= -15 && diffMinutes <= 180;
+                        });
+                        break;
+                    case 'favorites':
+                        filtered = filtered.filter(channel => channel.isFavorite);
+                        break;
+                }
+
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    if (/^#?\d+$/.test(term)) {
+                        const channelNumber = term.replace('#', '');
+                        filtered = filtered.filter(channel => channel.number === channelNumber);
+                    } else if (/^\d{1,2}:\d{2}$/.test(term)) {
+                        filtered = filtered.filter(channel => 
+                            channel.metadata?.time && channel.metadata.time.toLowerCase().includes(term)
+                        );
+                    } else {
+                        filtered = filtered.filter(channel => 
+                            channel.name.toLowerCase().includes(term) ||
+                            (channel.metadata?.event && channel.metadata.event.toLowerCase().includes(term)) ||
+                            channel.number.includes(term) ||
+                            (channel.metadata?.sport && channel.metadata.sport.toLowerCase().includes(term))
+                        );
+                    }
+                }
+
+                if (emojiFilters.length > 0) {
+                    filtered = filtered.filter(channel => {
+                        return emojiFilters.some(filter => {
+                            if (filter === 'Spain ES Movistar M+') {
+                                return channel.name.includes(' Spain ') ||
+                                    channel.name.includes(' ES ') ||
+                                    channel.name.includes('Movistar') ||
+                                    channel.name.includes('M+');
+                            }
+                            return (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
+                                (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
+                                channel.name.includes(filter);
+                        });
+                    });
+                }
+
+                return filtered;
+            }
+
             applyFilter(filter) {
                 this.state.currentFilter = filter;
                 localStorage.setItem('currentFilter', filter);
@@ -1524,63 +1595,6 @@
                 }
 
                 this.elements.channelsGrid.appendChild(fragment);
-            }
-
-            filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
-                let filtered = this.state.channels.filter(channel => !channel.isHidden);
-                
-                switch (type) {
-                    case 'live':
-                        filtered = filtered.filter(channel => {
-                            if (!channel.metadata?.time) return false;
-                            const [hours, minutes] = channel.metadata.time.split(':').map(Number);
-                            const eventTime = new Date();
-                            eventTime.setHours(hours, minutes, 0, 0);
-                            const diffMinutes = (new Date() - eventTime) / (1000 * 60);
-                            return diffMinutes >= -15 && diffMinutes <= 180;
-                        });
-                        break;
-                    case 'favorites':
-                        filtered = filtered.filter(channel => channel.isFavorite);
-                        break;
-                }
-
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    if (/^#?\d+$/.test(term)) {
-                        const channelNumber = term.replace('#', '');
-                        filtered = filtered.filter(channel => channel.number === channelNumber);
-                    } else if (/^\d{1,2}:\d{2}$/.test(term)) {
-                        filtered = filtered.filter(channel => 
-                            channel.metadata?.time && channel.metadata.time.toLowerCase().includes(term)
-                        );
-                    } else {
-                        filtered = filtered.filter(channel => 
-                            channel.name.toLowerCase().includes(term) ||
-                            (channel.metadata?.event && channel.metadata.event.toLowerCase().includes(term)) ||
-                            channel.number.includes(term) ||
-                            (channel.metadata?.sport && channel.metadata.sport.toLowerCase().includes(term))
-                        );
-                    }
-                }
-
-                if (emojiFilters.length > 0) {
-                    filtered = filtered.filter(channel => {
-                        return emojiFilters.some(filter => {
-                            if (filter === 'Spain ES Movistar M+') {
-                                return channel.name.includes(' Spain ') ||
-                                    channel.name.includes(' ES ') ||
-                                    channel.name.includes('Movistar') ||
-                                    channel.name.includes('M+');
-                            }
-                            return (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
-                                (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
-                                channel.name.includes(filter);
-                        });
-                    });
-                }
-
-                return filtered;
             }
 
             createChannelCard(channel, isGrouped = false) {
@@ -1794,14 +1808,32 @@
 
                 if (!this.state.currentStream) return;
 
+                // Verificar si ya existe un favorito para este canal
+                const existingFavoriteIndex = this.state.channels.findIndex(
+                    c => c.number === this.state.currentStream.number && c.isFavorite
+                );
+
                 const favoriteChannel = {
                     ...this.state.currentStream,
                     name: favoriteName,
                     isFavorite: true,
                     isHidden: false,
                     lastUpdated: new Date().toISOString(),
-                    isCustom: true
+                    isCustom: true,
+                    metadata: {
+                        ...this.state.currentStream.metadata,
+                        event: '', // Limpiar el evento para evitar duplicados
+                        time: ''   // Limpiar la hora para evitar duplicados
+                    }
                 };
+
+                if (existingFavoriteIndex !== -1) {
+                    // Reemplazar el favorito existente
+                    this.state.channels[existingFavoriteIndex] = favoriteChannel;
+                } else {
+                    // Agregar nuevo favorito
+                    this.state.channels.push(favoriteChannel);
+                }
 
                 const channelNumber = this.state.currentStream.number;
                 if (!this.state.channelHistory[channelNumber]) {
@@ -1824,13 +1856,6 @@
 
                 localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                 
-                const channelIndex = this.state.channels.findIndex(c => c.number === this.state.currentStream.number);
-                if (channelIndex !== -1) {
-                    this.state.channels[channelIndex] = favoriteChannel;
-                } else {
-                    this.state.channels.push(favoriteChannel);
-                }
-                
                 localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
                 
                 this.elements.favoriteBtn.classList.add('control-btn--active');
@@ -1843,16 +1868,17 @@
             }
 
             removeFavorite(channelNumber) {
+                // Eliminar todos los favoritos para este número de canal
+                this.state.channels = this.state.channels.filter(
+                    c => !(c.number === channelNumber && c.isFavorite)
+                );
+
                 if (this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber].isFavorite = false;
                     localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                 }
 
-                const channelIndex = this.state.channels.findIndex(c => c.number === channelNumber);
-                if (channelIndex !== -1) {
-                    this.state.channels[channelIndex].isFavorite = false;
-                    localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                }
+                localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
 
                 if (this.state.currentFilter === 'favorites') {
                     this.renderChannels();
