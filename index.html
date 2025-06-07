@@ -1446,6 +1446,106 @@
                 }
             }
 
+            getEventDuration(channel) {
+                const sport = channel.metadata?.sport?.toLowerCase() || '';
+                const event = (channel.metadata?.event?.toLowerCase() || '').replace(/[^\w\sáéíóúüñ]/gi, '');
+                const name = channel.name.toLowerCase();
+
+                // ---- DEPORTES DE EQUIPO ----
+                if (/(fútbol|soccer|football)/.test(sport)) {
+                    if (/amistoso|friendly/.test(event)) return 115;
+                    if (/champions|europa league|libertadores/.test(event)) return 150; // Incluye posibles prórrogas
+                    if (/mundial|world cup|eurocopa|copa américa/.test(event)) return 135;
+                    if (/partido|vs\.|vs |contra/.test(event)) return 105; // Liga regular
+                    return 120;
+
+                } else if (/(baloncesto|basketball)/.test(sport)) {
+                    if (/nba/.test(name)) return 150; // 48 min + tiempos comerciales
+                    if (/euroleague|eurocup/.test(name)) return 130;
+                    if (/acb|liga endesa/.test(name)) return 120;
+                    return 100; // Otras ligas
+
+                } else if (/(béisbol|baseball)/.test(sport)) {
+                    if (/mlb|grandes ligas/.test(name)) return 210; // 3.5 horas (promedio MLB)
+                    return 180; // Ligas menores
+
+                } else if (/(balonmano|handball)/.test(sport)) {
+                    return 90; // 60 min + descansos
+
+                } else if (/(rugby)/.test(sport)) {
+                    return 120; // 80 min + descansos
+
+                } else if (/(hockey|hielo)/.test(sport)) {
+                    if (/nhl/.test(name)) return 150; // 60 min + tiempos comerciales
+                    return 120; // Otras ligas
+
+                // ---- DEPORTES INDIVIDUALES ----
+                } else if (/(tenis|tennis)/.test(sport)) {
+                    if (/grand slam|wimbledon|open|final/.test(event)) return 300; // 5 horas para partidos largos
+                    if (/doble|dobles|double/.test(event)) return 180;
+                    return 150; // Partidos de 3 sets
+
+                } else if (/(golf)/.test(sport)) {
+                    if (/final|última ronda|last round/.test(event)) return 360;
+                    return 480; // Jornadas completas
+
+                } else if (/(motorsport|fórmula|formula)/.test(sport)) {
+                    if (/f1|gran premio|grand prix/.test(event)) return 180; // Carreras ~2h
+                    if (/moto gp|motogp/.test(event)) return 120;
+                    if (/24h|24 horas|le mans/.test(event)) return 1440; // 24 horas
+                    return 240; // Otras carreras
+
+                } else if (/(ciclismo|cycling)/.test(sport)) {
+                    if (/etapa|stage/.test(event)) return 300; // 5 horas para etapas normales
+                    if (/clásica|monumento/.test(event)) return 240; // 4 horas
+                    if (/contrarreloj|time trial/.test(event)) return 180; // 3 horas
+                    return 360; // Grandes vueltas
+
+                // ---- DEPORTES DE COMBATE ----
+                } else if (/(boxeo|boxing)/.test(sport)) {
+                    if (/main event|combate principal/.test(event)) return 60; // 12 rounds
+                    if (/pelea|fight|preliminar/.test(event)) return 30; // Combates preliminares
+                    return 180; // Cartelera completa
+
+                } else if (/(mma|ufc)/.test(sport)) {
+                    if (/main event|combate principal/.test(event)) return 75; // 5 rounds
+                    if (/co-main|coestelar/.test(event)) return 50; // 3-5 rounds
+                    if (/pelea|fight|preliminar/.test(event)) return 15; // Combates preliminares
+                    return 240; // Evento completo
+
+                // ---- eSPORTS ----
+                } else if (/(esports|videojuegos)/.test(sport)) {
+                    if (/torneo|tournament/.test(event)) return 240;
+                    if (/final|championship/.test(event)) return 120;
+                    if (/partida|match|mejor de/.test(event)) return 90;
+                    return 180;
+
+                // ---- DEPORTES VARIOS ----
+                } else if (/(atletismo|athletics)/.test(sport)) {
+                    if (/maratón|marathon/.test(event)) return 480;
+                    if (/decatlón|heptatlón/.test(event)) return 360;
+                    return 120; // Competiciones en pista
+
+                } else if (/(natación|swimming)/.test(sport)) {
+                    return 120; // Sesiones de competición
+
+                // ---- ENTRETENIMIENTO ----
+                } else if (/(tv shows|tv show)/.test(sport)) {
+                    return 60; // Episodios estándar
+
+                } else if (/(reality)/.test(sport)) {
+                    return 90; // Edición extendida
+
+                } else if (/(documental|documentary)/.test(sport)) {
+                    return 120; // Largometrajes
+
+                } else if (/(especial|special)/.test(sport)) {
+                    return 180; // Eventos largos
+                }
+                
+                return 120; // Valor por defecto (2 horas)
+            }
+
             filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
                 let filtered = this.state.channels.filter(channel => !channel.isHidden);
                 
@@ -1455,7 +1555,7 @@
                     const hasNoEvent = !channel.metadata?.event || channel.metadata.event.trim() === '';
                     if (hasNoEvent) {
                         if (seenChannels.has(channel.number)) {
-                            return false; // Ya hemos visto este canal sin evento
+                            return false;
                         }
                         seenChannels.add(channel.number);
                     }
@@ -1465,15 +1565,46 @@
                 // Aplicar filtros adicionales
                 switch (type) {
                     case 'live':
-                        filtered = filtered.filter(channel => {
+                        // Primero filtramos todos los canales que podrían estar en directo
+                        const potentialLiveChannels = filtered.filter(channel => {
                             if (!channel.metadata?.time) return false;
+                            
                             const [hours, minutes] = channel.metadata.time.split(':').map(Number);
                             const eventTime = new Date();
                             eventTime.setHours(hours, minutes, 0, 0);
                             const diffMinutes = (new Date() - eventTime) / (1000 * 60);
-                            return diffMinutes >= -15 && diffMinutes <= 180;
+                            
+                            // Determinar la duración máxima según el tipo de deporte/evento
+                            let maxDurationMinutes = this.getEventDuration(channel);
+                            
+                            return diffMinutes >= -15 && diffMinutes <= maxDurationMinutes;
                         });
+                        
+                        // Ahora filtramos para mantener solo el evento más reciente por canal
+                        const channelMap = new Map();
+                        potentialLiveChannels.forEach(channel => {
+                            const [hours, minutes] = channel.metadata.time.split(':').map(Number);
+                            const eventTime = new Date();
+                            eventTime.setHours(hours, minutes, 0, 0);
+                            
+                            if (!channelMap.has(channel.number)) {
+                                channelMap.set(channel.number, channel);
+                            } else {
+                                const existingChannel = channelMap.get(channel.number);
+                                const [existingHours, existingMinutes] = existingChannel.metadata.time.split(':').map(Number);
+                                const existingEventTime = new Date();
+                                existingEventTime.setHours(existingHours, existingMinutes, 0, 0);
+                                
+                                // Conservar el evento más reciente
+                                if (eventTime > existingEventTime) {
+                                    channelMap.set(channel.number, channel);
+                                }
+                            }
+                        });
+                        
+                        filtered = Array.from(channelMap.values());
                         break;
+                        
                     case 'favorites':
                         filtered = filtered.filter(channel => channel.isFavorite);
                         break;
