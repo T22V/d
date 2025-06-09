@@ -1176,7 +1176,7 @@
                         'Football': 'Fútbol',
                         'Soccer': 'Fútbol',
                         'Basketball': 'Baloncesto',
-                        'Tenis': 'Tenis',
+                        'Tennis': 'Tenis',  // ← Fuerza "Tenis" en lugar de "Tennis"
                         'Baseball': 'Béisbol',
                         'Boxing': 'Boxeo',
                         'Handball': 'Balonmano',
@@ -1632,15 +1632,27 @@
                 if (emojiFilters.length > 0) {
                     filtered = filtered.filter(channel => {
                         return emojiFilters.some(filter => {
-                            if (filter === 'Spain ES Movistar M+') {
+                            // Caso especial para Tenis (🎾)
+                            if (filter === "Tenis") {
+                                const tennisTerms = ["Tenis", "Tennis", "ATP", "WTA", "Grand Slam", "Wimbledon"];
+                                return (
+                                    tennisTerms.some(term => channel.metadata?.sport?.includes(term)) ||
+                                    tennisTerms.some(term => channel.metadata?.event?.includes(term))
+                                );
+                            }
+                            // Caso especial para España (🇪🇸)
+                            if (filter === "Spain ES Movistar M+") {
                                 return channel.name.includes(' Spain ') ||
                                     channel.name.includes(' ES ') ||
                                     channel.name.includes('Movistar') ||
                                     channel.name.includes('M+');
                             }
-                            return (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
+                            // Filtros normales
+                            return (
+                                (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
                                 (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
-                                channel.name.includes(filter);
+                                channel.name.includes(filter)
+                            );
                         });
                     });
                 }
