@@ -1136,22 +1136,14 @@
                 newChannels.forEach(channel => {
                     if (!history[channel.number]) {
                         history[channel.number] = {
-                            firstSeen: new Date().toISOString(),
-                            lastSeen: new Date().toISOString(),
                             names: [channel.name],
                             isFavorite: false,
-                            isHidden: false,
-                            playCount: 0,
-                            lastPlayed: null
+                            isHidden: false
                         };
                         hasUpdates = true;
-                    } else {
-                        const existing = history[channel.number];
-                        existing.lastSeen = new Date().toISOString();
-                        if (!existing.names.includes(channel.name)) {
-                            existing.names.push(channel.name);
-                            hasUpdates = true;
-                        }
+                    } else if (!history[channel.number].names.includes(channel.name)) {
+                        history[channel.number].names.push(channel.name);
+                        hasUpdates = true;
                     }
                 });
 
@@ -1404,20 +1396,11 @@
             updatePlayHistory(channelNumber) {
                 if (!this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber] = {
-                        firstSeen: new Date().toISOString(),
-                        lastSeen: new Date().toISOString(),
-                        names: [],
+                        names: [this.state.currentStream.name],
                         isFavorite: false,
-                        isHidden: false,
-                        playCount: 0,
-                        lastPlayed: null
+                        isHidden: false
                     };
                 }
-                
-                this.state.channelHistory[channelNumber].lastPlayed = new Date().toISOString();
-                this.state.channelHistory[channelNumber].playCount = 
-                    (this.state.channelHistory[channelNumber].playCount || 0) + 1;
-                
                 localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
             }
 
@@ -1981,17 +1964,12 @@
                 const channelNumber = this.state.currentStream.number;
                 if (!this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber] = {
-                        firstSeen: new Date().toISOString(),
-                        lastSeen: new Date().toISOString(),
                         names: [favoriteName],
                         isFavorite: true,
-                        isHidden: false,
-                        playCount: 0,
-                        lastPlayed: null
+                        isHidden: false
                     };
                 } else {
                     this.state.channelHistory[channelNumber].isFavorite = true;
-                    this.state.channelHistory[channelNumber].lastSeen = new Date().toISOString();
                     if (!this.state.channelHistory[channelNumber].names.includes(favoriteName)) {
                         this.state.channelHistory[channelNumber].names.push(favoriteName);
                     }
@@ -2011,18 +1989,24 @@
             }
 
             removeFavorite(channelNumber) {
-                // Eliminar todos los favoritos para este número de canal
-                this.state.channels = this.state.channels.filter(
-                    c => !(c.number === channelNumber && c.isFavorite)
-                );
+                // 1. Quitar la marca de favorito de todos los canales con este número
+                this.state.channels = this.state.channels.map(channel => {
+                    if (channel.number === channelNumber) {
+                        return { ...channel, isFavorite: false };
+                    }
+                    return channel;
+                });
 
+                // 2. Actualizar el historial (opcional, pero recomendado para consistencia)
                 if (this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber].isFavorite = false;
                     localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                 }
 
+                // 3. Guardar los cambios en localStorage
                 localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
 
+                // 4. Actualizar la UI si es necesario
                 if (this.state.currentFilter === 'favorites') {
                     this.renderChannels();
                 }
