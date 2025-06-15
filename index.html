@@ -79,10 +79,6 @@
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.1);
         }
-        .header-button--active {
-            background: var(--primary-dark);
-            transform: scale(1.1);
-        }
         .status-badge {
             padding: 0.3rem 0.6rem;
             border-radius: 20px;
@@ -579,6 +575,7 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
+        /* Media queries optimizadas */
         @media (max-width: 768px) {
             .header {
                 padding: 0.8rem;
@@ -821,9 +818,7 @@
                     activeEmojiFilters: JSON.parse(localStorage.getItem('activeEmojiFilters')) || [],
                     searchTerm: localStorage.getItem('searchTerm') || '',
                     isGrouped: localStorage.getItem('isGrouped') === 'true',
-                    channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {},
-                    offlineMode: localStorage.getItem('offlineMode') === 'true',
-                    historicalChannels: JSON.parse(localStorage.getItem('historicalChannels')) || {}
+                    channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {}
                 };
                 this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                 
@@ -831,6 +826,7 @@
                 if (savedChannels) {
                     try {
                         this.state.channels = JSON.parse(savedChannels);
+                        console.log('Canales cargados desde localStorage:', this.state.channels.length);
                     } catch (e) {
                         console.error('Error al parsear canales:', e);
                         this.state.channels = [];
@@ -844,10 +840,6 @@
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
                 this.setupExternalPlayerButtons();
                 this.restoreFilterState();
-                
-                if (this.state.offlineMode) {
-                    this.renderOfflineChannels();
-                }
             }
 
             initializeDOM() {
@@ -981,11 +973,7 @@
                 this.elements.searchInput.addEventListener('input', () => {
                     this.state.searchTerm = this.elements.searchInput.value.trim();
                     localStorage.setItem('searchTerm', this.state.searchTerm);
-                    if (this.state.offlineMode) {
-                        this.renderOfflineChannels();
-                    } else {
-                        this.debouncedRender();
-                    }
+                    this.debouncedRender();
                 });
 
                 this.elements.searchInput.addEventListener('keypress', (e) => {
@@ -1006,109 +994,6 @@
                 });
 
                 window.addEventListener('scroll', this.debounce(() => {}, 100));
-            }
-
-            toggleOfflineMode() {
-                this.state.offlineMode = !this.state.offlineMode;
-                localStorage.setItem('offlineMode', this.state.offlineMode);
-                
-                if (this.state.offlineMode) {
-                    this.renderOfflineChannels();
-                    this.showNotification('Modo offline activado');
-                } else {
-                    this.renderChannels();
-                    this.showNotification('Modo online activado');
-                }
-            }
-
-            renderOfflineChannels() {
-                this.elements.channelsGrid.innerHTML = '';
-                const fragment = document.createDocumentFragment();
-
-                const allChannels = { ...this.state.historicalChannels };
-                
-                // Agregar canales favoritos
-                this.state.channels.filter(c => c.isFavorite).forEach(channel => {
-                    allChannels[channel.number] = channel.name;
-                });
-
-                // Filtrar canales según el término de búsqueda
-                const searchTerm = this.state.searchTerm.toLowerCase();
-                let filteredChannels = Object.entries(allChannels);
-                
-                if (searchTerm) {
-                    if (/^#?\d+$/.test(searchTerm)) {
-                        const channelNumber = searchTerm.replace('#', '');
-                        filteredChannels = filteredChannels.filter(([number]) => number === channelNumber);
-                    } else {
-                        filteredChannels = filteredChannels.filter(([number, name]) => 
-                            name.toLowerCase().includes(searchTerm) || 
-                            number.includes(searchTerm)
-                        );
-                    }
-                }
-
-                if (filteredChannels.length === 0) {
-                    this.elements.channelsGrid.innerHTML = `
-                        <div class="no-results-message">
-                            <p>No se encontraron canales</p>
-                            ${this.state.searchTerm ? 
-                                '<button id="resetFiltersBtn" class="reset-filters-btn">Resetear filtros</button>' : ''
-                            }
-                        </div>
-                    `;
-                    
-                    if (document.getElementById('resetFiltersBtn')) {
-                        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
-                            this.state.searchTerm = '';
-                            this.elements.searchInput.value = '';
-                            localStorage.setItem('searchTerm', '');
-                            this.renderOfflineChannels();
-                        });
-                    }
-                    return;
-                }
-
-                filteredChannels.forEach(([number, name]) => {
-                    const channelCard = document.createElement('div');
-                    channelCard.className = 'channel-card';
-                    channelCard.dataset.id = number;
-                    
-                    const isFavorite = this.state.channels.some(c => c.number === number && c.isFavorite);
-                    const favoriteIndicator = isFavorite ? '<span style="color: gold; margin-right: 5px;">★</span>' : '';
-                    
-                    channelCard.innerHTML = `
-                        <div class="channel-header">
-                            <h3 class="channel-name">${favoriteIndicator}${name}</h3>
-                            <div class="channel-number">${number}</div>
-                        </div>
-                    `;
-                    channelCard.addEventListener('click', () => {
-                        this.playOfflineChannel(number, name);
-                    });
-                    fragment.appendChild(channelCard);
-                });
-
-                this.elements.channelsGrid.appendChild(fragment);
-            }
-
-            playOfflineChannel(number, name) {
-                this.state.currentStream = {
-                    number,
-                    name,
-                    url: `https://${this.state.baseDomain}/embed/stream-${number}.php`
-                };
-
-                this.elements.playerContainer.innerHTML = 
-                    `<iframe id="videoFrame" src="${this.state.currentStream.url}" allowfullscreen></iframe>`;
-                
-                this.elements.playerContainer.classList.add('player-container--active');
-                this.elements.playerControls.classList.add('player-controls--active');
-                this.elements.channelInfo.textContent = name;
-                this.elements.channelNumberDisplay.textContent = `CH-${number}`;
-                
-                const isFavorite = this.state.channels.some(c => c.number === number && c.isFavorite);
-                this.elements.favoriteBtn.classList.toggle('control-btn--active', isFavorite);
             }
 
             toggleEmojiFilter(filter, button) {
@@ -1176,8 +1061,6 @@
             }
 
             async loadChannels() {
-                if (this.state.offlineMode) return;
-                
                 this.state.isLoading = true;
                 this.updateSystemStatus('loading');
                 try {
@@ -1193,46 +1076,39 @@
                             this.updateChannelHistory(newChannels);
                             
                             const savedChannels = JSON.parse(localStorage.getItem('daddyliveChannels')) || [];
-                            
-                            const channelMap = new Map();
-                            
-                            savedChannels.forEach(channel => {
-                                if (!channel.isHidden) {
-                                    channelMap.set(channel.number, channel);
+                            const mergedChannels = newChannels.map(newChannel => {
+                                const savedChannel = savedChannels.find(sc => sc.number === newChannel.number);
+                                if (savedChannel) {
+                                    return {
+                                        ...newChannel,
+                                        name: savedChannel.name,
+                                        isFavorite: savedChannel.isFavorite,
+                                        isHidden: savedChannel.isHidden,
+                                        lastUpdated: savedChannel.lastUpdated || new Date().toISOString(),
+                                        isCustom: savedChannel.isCustom || false
+                                    };
                                 }
+                                return newChannel;
                             });
                             
-                            newChannels.forEach(newChannel => {
-                                const existingChannel = channelMap.get(newChannel.number);
-                                
-                                if (existingChannel) {
-                                    channelMap.set(newChannel.number, {
-                                        ...newChannel,
-                                        isFavorite: existingChannel.isFavorite,
-                                        isHidden: existingChannel.isHidden,
-                                        lastUpdated: new Date().toISOString(),
-                                        isCustom: existingChannel.isCustom || false,
-                                        name: existingChannel.isFavorite ? existingChannel.name : newChannel.name
-                                    });
-                                } else {
-                                    channelMap.set(newChannel.number, {
-                                        ...newChannel,
-                                        isFavorite: false,
-                                        isHidden: false,
-                                        lastUpdated: new Date().toISOString(),
-                                        isCustom: false
-                                    });
-                                }
-                            });
+                            // Limpiar eventos/hora en favoritos no actualizados
+                            const customFavorites = savedChannels
+                                .filter(sc => 
+                                    sc.isFavorite && 
+                                    !newChannels.some(nc => nc.number === sc.number)
+                                )
+                                .map(fav => ({
+                                    ...fav,
+                                    metadata: {
+                                        ...fav.metadata,
+                                        event: '', // Borrar evento antiguo
+                                        time: '',  // Borrar hora antigua
+                                        sport: fav.metadata?.sport || 'General' // Mantener deporte si existe
+                                    }
+                                }));
                             
-                            const hiddenChannels = savedChannels.filter(c => c.isHidden && !newChannels.some(nc => nc.number === c.number));
-                            
-                            const mergedChannels = [...channelMap.values(), ...hiddenChannels];
-                            
-                            mergedChannels.sort((a, b) => parseInt(a.number) - parseInt(b.number));
-                            
-                            this.state.channels = mergedChannels;
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(mergedChannels));
+                            this.state.channels = [...mergedChannels, ...customFavorites];
+                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
                             
                             this.state.backupMode = false;
                             this.renderChannels();
@@ -1255,7 +1131,6 @@
 
             updateChannelHistory(newChannels) {
                 const history = { ...this.state.channelHistory };
-                const historical = { ...this.state.historicalChannels };
                 let hasUpdates = false;
 
                 newChannels.forEach(channel => {
@@ -1263,26 +1138,18 @@
                         history[channel.number] = {
                             names: [channel.name],
                             isFavorite: false,
-                            isHidden: false,
-                            isCustom: false
+                            isHidden: false
                         };
                         hasUpdates = true;
                     } else if (!history[channel.number].names.includes(channel.name)) {
                         history[channel.number].names.push(channel.name);
                         hasUpdates = true;
                     }
-
-                    if (!history[channel.number]?.isCustom) {
-                        historical[channel.number] = channel.name;
-                        hasUpdates = true;
-                    }
                 });
 
                 if (hasUpdates) {
                     this.state.channelHistory = history;
-                    this.state.historicalChannels = historical;
                     localStorage.setItem('channelHistory', JSON.stringify(history));
-                    localStorage.setItem('historicalChannels', JSON.stringify(historical));
                 }
             }
 
@@ -1301,7 +1168,7 @@
                         'Football': 'Fútbol',
                         'Soccer': 'Fútbol',
                         'Basketball': 'Baloncesto',
-                        'Tennis': 'Tenis',
+                        'Tennis': 'Tenis',  // ← Fuerza "Tenis" en lugar de "Tennis"
                         'Baseball': 'Béisbol',
                         'Boxing': 'Boxeo',
                         'Handball': 'Balonmano',
@@ -1531,8 +1398,7 @@
                     this.state.channelHistory[channelNumber] = {
                         names: [this.state.currentStream.name],
                         isFavorite: false,
-                        isHidden: false,
-                        isCustom: false
+                        isHidden: false
                     };
                 }
                 localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
@@ -1568,98 +1434,105 @@
                 const event = (channel.metadata?.event?.toLowerCase() || '').replace(/[^\w\sáéíóúüñ]/gi, '');
                 const name = channel.name.toLowerCase();
 
+                // ---- DEPORTES DE EQUIPO ----
                 if (/(fútbol|soccer|football)/.test(sport)) {
                     if (/amistoso|friendly/.test(event)) return 115;
-                    if (/champions|europa league|libertadores/.test(event)) return 150;
+                    if (/champions|europa league|libertadores/.test(event)) return 150; // Incluye posibles prórrogas
                     if (/mundial|world cup|eurocopa|copa américa/.test(event)) return 135;
-                    if (/partido|vs\.|vs |contra/.test(event)) return 105;
+                    if (/partido|vs\.|vs |contra/.test(event)) return 105; // Liga regular
                     return 120;
 
                 } else if (/(baloncesto|basketball)/.test(sport)) {
-                    if (/nba/.test(name)) return 150;
+                    if (/nba/.test(name)) return 150; // 48 min + tiempos comerciales
                     if (/euroleague|eurocup/.test(name)) return 130;
                     if (/acb|liga endesa/.test(name)) return 120;
-                    return 100;
+                    return 100; // Otras ligas
 
                 } else if (/(béisbol|baseball)/.test(sport)) {
-                    if (/mlb|grandes ligas/.test(name)) return 210;
-                    return 180;
+                    if (/mlb|grandes ligas/.test(name)) return 210; // 3.5 horas (promedio MLB)
+                    return 180; // Ligas menores
 
                 } else if (/(balonmano|handball)/.test(sport)) {
-                    return 90;
+                    return 90; // 60 min + descansos
 
                 } else if (/(rugby)/.test(sport)) {
-                    return 120;
+                    return 120; // 80 min + descansos
 
                 } else if (/(hockey|hielo)/.test(sport)) {
-                    if (/nhl/.test(name)) return 150;
-                    return 120;
+                    if (/nhl/.test(name)) return 150; // 60 min + tiempos comerciales
+                    return 120; // Otras ligas
 
+                // ---- DEPORTES INDIVIDUALES ----
                 } else if (/(tenis|tennis)/.test(sport)) {
-                    if (/grand slam|wimbledon|open|final/.test(event)) return 300;
+                    if (/grand slam|wimbledon|open|final/.test(event)) return 300; // 5 horas para partidos largos
                     if (/doble|dobles|double/.test(event)) return 180;
-                    return 150;
+                    return 150; // Partidos de 3 sets
 
                 } else if (/(golf)/.test(sport)) {
                     if (/final|última ronda|last round/.test(event)) return 360;
-                    return 480;
+                    return 480; // Jornadas completas
 
                 } else if (/(motorsport|fórmula|formula)/.test(sport)) {
-                    if (/f1|gran premio|grand prix/.test(event)) return 180;
+                    if (/f1|gran premio|grand prix/.test(event)) return 180; // Carreras ~2h
                     if (/moto gp|motogp/.test(event)) return 120;
-                    if (/24h|24 horas|le mans/.test(event)) return 1440;
-                    return 240;
+                    if (/24h|24 horas|le mans/.test(event)) return 1440; // 24 horas
+                    return 240; // Otras carreras
 
                 } else if (/(ciclismo|cycling)/.test(sport)) {
-                    if (/etapa|stage/.test(event)) return 300;
-                    if (/clásica|monumento/.test(event)) return 240;
-                    if (/contrarreloj|time trial/.test(event)) return 180;
-                    return 360;
+                    if (/etapa|stage/.test(event)) return 300; // 5 horas para etapas normales
+                    if (/clásica|monumento/.test(event)) return 240; // 4 horas
+                    if (/contrarreloj|time trial/.test(event)) return 180; // 3 horas
+                    return 360; // Grandes vueltas
 
+                // ---- DEPORTES DE COMBATE ----
                 } else if (/(boxeo|boxing)/.test(sport)) {
-                    if (/main event|combate principal/.test(event)) return 60;
-                    if (/pelea|fight|preliminar/.test(event)) return 30;
-                    return 180;
+                    if (/main event|combate principal/.test(event)) return 60; // 12 rounds
+                    if (/pelea|fight|preliminar/.test(event)) return 30; // Combates preliminares
+                    return 180; // Cartelera completa
 
                 } else if (/(mma|ufc)/.test(sport)) {
-                    if (/main event|combate principal/.test(event)) return 75;
-                    if (/co-main|coestelar/.test(event)) return 50;
-                    if (/pelea|fight|preliminar/.test(event)) return 15;
-                    return 240;
+                    if (/main event|combate principal/.test(event)) return 75; // 5 rounds
+                    if (/co-main|coestelar/.test(event)) return 50; // 3-5 rounds
+                    if (/pelea|fight|preliminar/.test(event)) return 15; // Combates preliminares
+                    return 240; // Evento completo
 
+                // ---- eSPORTS ----
                 } else if (/(esports|videojuegos)/.test(sport)) {
                     if (/torneo|tournament/.test(event)) return 240;
                     if (/final|championship/.test(event)) return 120;
                     if (/partida|match|mejor de/.test(event)) return 90;
                     return 180;
 
+                // ---- DEPORTES VARIOS ----
                 } else if (/(atletismo|athletics)/.test(sport)) {
                     if (/maratón|marathon/.test(event)) return 480;
                     if (/decatlón|heptatlón/.test(event)) return 360;
-                    return 120;
+                    return 120; // Competiciones en pista
 
                 } else if (/(natación|swimming)/.test(sport)) {
-                    return 120;
+                    return 120; // Sesiones de competición
 
+                // ---- ENTRETENIMIENTO ----
                 } else if (/(tv shows|tv show)/.test(sport)) {
-                    return 60;
+                    return 60; // Episodios estándar
 
                 } else if (/(reality)/.test(sport)) {
-                    return 90;
+                    return 90; // Edición extendida
 
                 } else if (/(documental|documentary)/.test(sport)) {
-                    return 120;
+                    return 120; // Largometrajes
 
                 } else if (/(especial|special)/.test(sport)) {
-                    return 180;
+                    return 180; // Eventos largos
                 }
                 
-                return 120;
+                return 120; // Valor por defecto (2 horas)
             }
 
             filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
                 let filtered = this.state.channels.filter(channel => !channel.isHidden);
                 
+                // Eliminar canales duplicados sin evento (solo mantener uno por número de canal)
                 const seenChannels = new Set();
                 filtered = filtered.filter(channel => {
                     const hasNoEvent = !channel.metadata?.event || channel.metadata.event.trim() === '';
@@ -1672,8 +1545,10 @@
                     return true;
                 });
 
+                // Aplicar filtros adicionales
                 switch (type) {
                     case 'live':
+                        // Primero filtramos todos los canales que podrían estar en directo
                         const potentialLiveChannels = filtered.filter(channel => {
                             if (!channel.metadata?.time) return false;
                             
@@ -1682,11 +1557,13 @@
                             eventTime.setHours(hours, minutes, 0, 0);
                             const diffMinutes = (new Date() - eventTime) / (1000 * 60);
                             
+                            // Determinar la duración máxima según el tipo de deporte/evento
                             let maxDurationMinutes = this.getEventDuration(channel);
                             
                             return diffMinutes >= -15 && diffMinutes <= maxDurationMinutes;
                         });
                         
+                        // Ahora filtramos para mantener solo el evento más reciente por canal
                         const channelMap = new Map();
                         potentialLiveChannels.forEach(channel => {
                             const [hours, minutes] = channel.metadata.time.split(':').map(Number);
@@ -1701,6 +1578,7 @@
                                 const existingEventTime = new Date();
                                 existingEventTime.setHours(existingHours, existingMinutes, 0, 0);
                                 
+                                // Conservar el evento más reciente
                                 if (eventTime > existingEventTime) {
                                     channelMap.set(channel.number, channel);
                                 }
@@ -1737,6 +1615,7 @@
                 if (emojiFilters.length > 0) {
                     filtered = filtered.filter(channel => {
                         return emojiFilters.some(filter => {
+                            // Caso especial para Tenis (🎾)
                             if (filter === "Tenis") {
                                 const tennisTerms = ["Tenis", "Tennis", "ATP", "WTA", "Grand Slam", "Wimbledon"];
                                 return (
@@ -1744,12 +1623,14 @@
                                     tennisTerms.some(term => channel.metadata?.event?.includes(term))
                                 );
                             }
+                            // Caso especial para España (🇪🇸)
                             if (filter === "Spain ES Movistar M+") {
                                 return channel.name.includes(' Spain ') ||
                                     channel.name.includes(' ES ') ||
                                     channel.name.includes('Movistar') ||
                                     channel.name.includes('M+');
                             }
+                            // Filtros normales
                             return (
                                 (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
                                 (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
@@ -1795,7 +1676,7 @@
             }
 
             renderChannels(forceClear = false) {
-                if (this.state.isLoading || this.state.offlineMode) return;
+                if (this.state.isLoading) return;
                 
                 if (forceClear) {
                     this.elements.channelsGrid.innerHTML = '';
@@ -2053,6 +1934,7 @@
 
                 if (!this.state.currentStream) return;
 
+                // Verificar si ya existe un favorito para este canal
                 const existingFavoriteIndex = this.state.channels.findIndex(
                     c => c.number === this.state.currentStream.number && c.isFavorite
                 );
@@ -2066,14 +1948,16 @@
                     isCustom: true,
                     metadata: {
                         ...this.state.currentStream.metadata,
-                        event: '',
-                        time: ''
+                        event: '', // Limpiar el evento para evitar duplicados
+                        time: ''   // Limpiar la hora para evitar duplicados
                     }
                 };
 
                 if (existingFavoriteIndex !== -1) {
+                    // Reemplazar el favorito existente
                     this.state.channels[existingFavoriteIndex] = favoriteChannel;
                 } else {
+                    // Agregar nuevo favorito
                     this.state.channels.push(favoriteChannel);
                 }
 
@@ -2082,12 +1966,10 @@
                     this.state.channelHistory[channelNumber] = {
                         names: [favoriteName],
                         isFavorite: true,
-                        isHidden: false,
-                        isCustom: true
+                        isHidden: false
                     };
                 } else {
                     this.state.channelHistory[channelNumber].isFavorite = true;
-                    this.state.channelHistory[channelNumber].isCustom = true;
                     if (!this.state.channelHistory[channelNumber].names.includes(favoriteName)) {
                         this.state.channelHistory[channelNumber].names.push(favoriteName);
                     }
@@ -2107,6 +1989,7 @@
             }
 
             removeFavorite(channelNumber) {
+                // 1. Quitar la marca de favorito de todos los canales con este número
                 this.state.channels = this.state.channels.map(channel => {
                     if (channel.number === channelNumber) {
                         return { ...channel, isFavorite: false };
@@ -2114,13 +1997,16 @@
                     return channel;
                 });
 
+                // 2. Actualizar el historial (opcional, pero recomendado para consistencia)
                 if (this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber].isFavorite = false;
                     localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
                 }
 
+                // 3. Guardar los cambios en localStorage
                 localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
 
+                // 4. Actualizar la UI si es necesario
                 if (this.state.currentFilter === 'favorites') {
                     this.renderChannels();
                 }
@@ -2242,6 +2128,7 @@
             handleSearchCommand() {
                 const value = this.elements.searchInput.value.trim();
                 
+                // Comandos especiales
                 if (value === '&O') {
                     this.applyFilter('all');
                     this.elements.searchInput.value = '';
@@ -2276,12 +2163,9 @@
                     }
                     this.elements.searchInput.value = '';
                     return;
-                } else if (value === '&X') {
-                    this.toggleOfflineMode();
-                    this.elements.searchInput.value = '';
-                    return;
                 }
 
+                // Búsqueda por número de canal
                 if (/^#?\d+$/.test(value)) {
                     const channelNumber = value.replace('#', '');
                     const channel = this.state.channels.find(c => c.number === channelNumber && !c.isHidden);
@@ -2303,11 +2187,14 @@
                             }
                         });
                     }
+                    // Limpiar el campo de búsqueda después de usar el número
                     this.elements.searchInput.value = '';
                     return;
                 }
 
+                // Búsqueda por hora (ej: 15:30)
                 if (/^\d{1,2}:\d{2}$/.test(value)) {
+                    // Limpiar el campo de búsqueda después de usar la hora
                     this.elements.searchInput.value = '';
                     return;
                 }
