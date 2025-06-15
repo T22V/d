@@ -981,7 +981,11 @@
                 this.elements.searchInput.addEventListener('input', () => {
                     this.state.searchTerm = this.elements.searchInput.value.trim();
                     localStorage.setItem('searchTerm', this.state.searchTerm);
-                    this.debouncedRender();
+                    if (this.state.offlineMode) {
+                        this.renderOfflineChannels();
+                    } else {
+                        this.debouncedRender();
+                    }
                 });
 
                 this.elements.searchInput.addEventListener('keypress', (e) => {
@@ -1023,11 +1027,49 @@
 
                 const allChannels = { ...this.state.historicalChannels };
                 
+                // Agregar canales favoritos
                 this.state.channels.filter(c => c.isFavorite).forEach(channel => {
                     allChannels[channel.number] = channel.name;
                 });
 
-                Object.entries(allChannels).forEach(([number, name]) => {
+                // Filtrar canales según el término de búsqueda
+                const searchTerm = this.state.searchTerm.toLowerCase();
+                let filteredChannels = Object.entries(allChannels);
+                
+                if (searchTerm) {
+                    if (/^#?\d+$/.test(searchTerm)) {
+                        const channelNumber = searchTerm.replace('#', '');
+                        filteredChannels = filteredChannels.filter(([number]) => number === channelNumber);
+                    } else {
+                        filteredChannels = filteredChannels.filter(([number, name]) => 
+                            name.toLowerCase().includes(searchTerm) || 
+                            number.includes(searchTerm)
+                        );
+                    }
+                }
+
+                if (filteredChannels.length === 0) {
+                    this.elements.channelsGrid.innerHTML = `
+                        <div class="no-results-message">
+                            <p>No se encontraron canales</p>
+                            ${this.state.searchTerm ? 
+                                '<button id="resetFiltersBtn" class="reset-filters-btn">Resetear filtros</button>' : ''
+                            }
+                        </div>
+                    `;
+                    
+                    if (document.getElementById('resetFiltersBtn')) {
+                        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+                            this.state.searchTerm = '';
+                            this.elements.searchInput.value = '';
+                            localStorage.setItem('searchTerm', '');
+                            this.renderOfflineChannels();
+                        });
+                    }
+                    return;
+                }
+
+                filteredChannels.forEach(([number, name]) => {
                     const channelCard = document.createElement('div');
                     channelCard.className = 'channel-card';
                     channelCard.dataset.id = number;
