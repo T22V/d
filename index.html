@@ -780,6 +780,8 @@
         <div class="header__left-buttons">
             <button class="header-button" id="lsButton">LS</button>
             <button class="header-button" id="shButton">SH</button>
+            <button class="header-button" id="wrButton">WR</button>
+            <button class="header-button" id="stButton">ST</button>
         </div>
         <div class="header__actions">
             <span>Estado:</span>
@@ -788,8 +790,10 @@
             <span class="offline-indicator" id="offlineIndicator" style="display: none;">OFFLINE</span>
         </div>
         <div class="header__right-buttons">
-            <button class="header-button" id="wrButton">WR</button>
             <button class="header-button" onclick="window.open('https://ziggy079w.toolcirclef6mua.cfd/es', '_blank')">SR</button>
+            <button class="header-button" onclick="window.open('https://www.fctv77.live/es', '_blank')">FC</button>
+            <button class="header-button" onclick="window.open('https://antenaplanet.store/', '_blank')">AP</button>
+            <button class="header-button" onclick="window.open('https://antenaplanet.store/tvschedule.php', '_blank')">PS</button>
         </div>
     </header>
     <div class="modal" id="channelListModal">
@@ -914,7 +918,8 @@
                     offlineIndicator: document.getElementById('offlineIndicator'),
                     lsButton: document.getElementById('lsButton'),
                     shButton: document.getElementById('shButton'),
-                    wrButton: document.getElementById('wrButton')
+                    wrButton: document.getElementById('wrButton'),
+                    stButton: document.getElementById('stButton')
                 };
 
                 if (this.state.isDarkMode) {
@@ -2458,6 +2463,8 @@
                     this.loadExternalUrl('https://sporthd.live/'));
                 document.getElementById('wrButton').addEventListener('click', () =>
                     this.loadExternalUrl('https://wearechecking.online/'));
+                document.getElementById('stButton').addEventListener('click', () =>
+                    this.loadExternalUrl('https://www.streamhd.ws/'));
             }
 
             loadExternalUrl(url) {
