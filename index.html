@@ -575,7 +575,7 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* Estilos para el modo offline */
+        /* Estilos para el modo offline*/
         .mode-toggle {
             background: var(--primary);
             color: white;
@@ -2181,10 +2181,10 @@
             updateChannelCount() {
                 if (this.state.offlineMode) {
                     const count = Object.keys(this.state.channelHistory).length;
-                    this.elements.channelCount.textContent = `${count} canales (offline)`;
+                    this.elements.channelCount.textContent = `${count}`;
                 } else {
                     const count = this.state.channels.filter(c => !c.isHidden).length;
-                    this.elements.channelCount.textContent = `${count} canales`;
+                    this.elements.channelCount.textContent = `${count}`;
                 }
             }
 
