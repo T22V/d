@@ -600,6 +600,128 @@
             margin-left: 10px;
         }
 
+        /* Botón de ajustes flotante */
+        .settings-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+        .settings-button:hover {
+            background: var(--primary-dark);
+            transform: scale(1.1);
+        }
+        .settings-modal {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 300px;
+            max-height: 70vh;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            z-index: 1000;
+            display: none;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        .settings-modal--active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        .settings-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text);
+            text-align: center;
+        }
+        .settings-group {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+        .settings-group:last-child {
+            border-bottom: none;
+        }
+        .settings-group-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .settings-label {
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .settings-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .settings-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .settings-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .settings-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .settings-slider {
+            background-color: var(--primary);
+        }
+        input:checked + .settings-slider:before {
+            transform: translateX(26px);
+        }
+        .settings-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text);
+        }
+
         /* Media queries optimizadas */
         @media (max-width: 768px) {
             .header {
@@ -672,6 +794,11 @@
             .mode-toggle {
                 padding: 0.5rem;
                 font-size: 0.8rem;
+            }
+            .settings-modal {
+                width: 280px;
+                right: 10px;
+                bottom: 70px;
             }
         }
 
@@ -820,6 +947,67 @@
     <div class="loading" id="loading">
         <div class="spinner"></div>
     </div>
+
+    <!-- Botón de ajustes flotante -->
+    <div class="settings-button" id="settingsButton">⚙️</div>
+    <div class="settings-modal" id="settingsModal">
+        <button class="settings-close" id="settingsClose">×</button>
+        <h3 class="settings-title">Ajustes</h3>
+        <div class="settings-group">
+            <div class="settings-group-title">Modos de visualización</div>
+            <div class="settings-item">
+                <span class="settings-label">Modo oscuro (&D)</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
+            <div class="settings-item">
+                <span class="settings-label">Pantalla completa (&F)</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="fullscreenToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
+            <div class="settings-item">
+                <span class="settings-label">Agrupar canales (&G)</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="groupModeToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
+            <div class="settings-item">
+                <span class="settings-label">Reproductor fijo</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="stickyPlayerToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="settings-group">
+            <div class="settings-group-title">Opciones de canales</div>
+            <div class="settings-item">
+                <span class="settings-label">Modo premium (&P)</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="premiumModeToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
+            <div class="settings-item">
+                <span class="settings-label">Modo offline (&X)</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="offlineModeToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="settings-group">
+            <div class="settings-group-title">Acciones rápidas</div>
+            <button class="modal__btn modal__btn--primary" id="resetFiltersBtn" style="width: 100%; margin-bottom: 0.5rem;">Resetear filtros (&O)</button>
+            <button class="modal__btn modal__btn--secondary" id="restoreHiddenBtn" style="width: 100%;">Restaurar canales ocultos (&H)</button>
+        </div>
+    </div>
+
     <script>
         class TVApp {
             constructor() {
@@ -856,7 +1044,7 @@
                     searchTerm: localStorage.getItem('searchTerm') || '',
                     isGrouped: localStorage.getItem('isGrouped') === 'true',
                     channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || [],
-                    offlineMode: false
+                    offlineMode: localStorage.getItem('offlineMode') === 'true'
                 };
                 this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                 
@@ -878,9 +1066,14 @@
                 this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
                 this.setupExternalPlayerButtons();
                 this.restoreFilterState();
+                this.setupSettingsModal();
                 
                 this.loadChannels();
                 this.loadPremiumLinks();
+
+                if (this.state.offlineMode) {
+                    this.toggleOfflineMode(false);
+                }
             }
 
             initializeDOM() {
@@ -919,22 +1112,97 @@
                     lsButton: document.getElementById('lsButton'),
                     shButton: document.getElementById('shButton'),
                     wrButton: document.getElementById('wrButton'),
-                    stButton: document.getElementById('stButton')
+                    stButton: document.getElementById('stButton'),
+                    settingsButton: document.getElementById('settingsButton'),
+                    settingsModal: document.getElementById('settingsModal'),
+                    settingsClose: document.getElementById('settingsClose'),
+                    darkModeToggle: document.getElementById('darkModeToggle'),
+                    fullscreenToggle: document.getElementById('fullscreenToggle'),
+                    groupModeToggle: document.getElementById('groupModeToggle'),
+                    stickyPlayerToggle: document.getElementById('stickyPlayerToggle'),
+                    premiumModeToggle: document.getElementById('premiumModeToggle'),
+                    offlineModeToggle: document.getElementById('offlineModeToggle'),
+                    resetFiltersBtn: document.getElementById('resetFiltersBtn'),
+                    restoreHiddenBtn: document.getElementById('restoreHiddenBtn')
                 };
 
                 if (this.state.isDarkMode) {
                     document.body.classList.add('dark-mode');
+                    this.elements.darkModeToggle.checked = true;
                 }
 
                 this.toggleStickyPlayer(this.state.stickyPlayer);
                 this.elements.toggleStickyBtn.innerHTML = this.state.stickyPlayer ? '⛉' : '⛊';
                 this.elements.toggleStickyBtn.title = this.state.stickyPlayer ? "Liberar reproductor" : "Fijar reproductor";
+                this.elements.stickyPlayerToggle.checked = this.state.stickyPlayer;
 
                 if (this.state.fullscreen) {
                     document.documentElement.requestFullscreen();
+                    this.elements.fullscreenToggle.checked = true;
                 }
 
-                this.elements.offlineIndicator.style.display = 'none';
+                this.elements.offlineIndicator.style.display = this.state.offlineMode ? 'block' : 'none';
+                this.elements.offlineModeToggle.checked = this.state.offlineMode;
+                this.elements.premiumModeToggle.checked = this.state.usePremium;
+                this.elements.groupModeToggle.checked = this.state.isGrouped;
+            }
+
+            setupSettingsModal() {
+                this.elements.settingsButton.addEventListener('click', () => {
+                    this.elements.settingsModal.classList.toggle('settings-modal--active');
+                });
+
+                this.elements.settingsClose.addEventListener('click', () => {
+                    this.elements.settingsModal.classList.remove('settings-modal--active');
+                });
+
+                this.elements.darkModeToggle.addEventListener('change', () => {
+                    this.toggleDarkMode();
+                });
+
+                this.elements.fullscreenToggle.addEventListener('change', () => {
+                    this.toggleFullscreen();
+                });
+
+                this.elements.groupModeToggle.addEventListener('change', () => {
+                    this.toggleGroupMode();
+                });
+
+                this.elements.stickyPlayerToggle.addEventListener('change', () => {
+                    this.toggleStickyMode();
+                });
+
+                this.elements.premiumModeToggle.addEventListener('change', () => {
+                    this.togglePremiumMode();
+                });
+
+                this.elements.offlineModeToggle.addEventListener('change', () => {
+                    this.toggleOfflineMode();
+                });
+
+                this.elements.resetFiltersBtn.addEventListener('click', () => {
+                    this.applyFilter('all');
+                    this.state.searchTerm = '';
+                    this.elements.searchInput.value = '';
+                    localStorage.removeItem('searchTerm');
+                    this.clearEmojiFilters();
+                    this.elements.settingsModal.classList.remove('settings-modal--active');
+                });
+
+                this.elements.restoreHiddenBtn.addEventListener('click', () => {
+                    const hiddenChannels = this.state.channels.filter(c => c.isHidden);
+                    if (hiddenChannels.length > 0) {
+                        if (confirm(`¿Quieres restaurar los ${hiddenChannels.length} canales ocultos?`)) {
+                            hiddenChannels.forEach(c => c.isHidden = false);
+                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
+                            this.renderChannels();
+                            this.showNotification('Canales ocultos restaurados');
+                        }
+                    } else {
+                        this.showNotification('No hay canales ocultos');
+                    }
+                    this.elements.settingsModal.classList.remove('settings-modal--active');
+                });
             }
 
             setupIntersectionObserver() {
@@ -1043,6 +1311,7 @@
                 document.addEventListener('fullscreenchange', () => {
                     this.state.fullscreen = !!document.fullscreenElement;
                     localStorage.setItem('fullscreen', this.state.fullscreen);
+                    this.elements.fullscreenToggle.checked = this.state.fullscreen;
                 });
 
                 window.addEventListener('scroll', this.debounce(() => {}, 100));
@@ -1067,14 +1336,16 @@
                 };
             }
 
-            toggleOfflineMode() {
+            toggleOfflineMode(showNotification = true) {
                 this.state.offlineMode = !this.state.offlineMode;
                 localStorage.setItem('offlineMode', this.state.offlineMode);
+                this.elements.offlineModeToggle.checked = this.state.offlineMode;
                 
                 this.elements.offlineIndicator.style.display = this.state.offlineMode ? 'block' : 'none';
                 
                 if (this.state.offlineMode) {
-                    this.showOfflineMode(true);
+                    this.showOfflineMode(showNotification);
+                    this.updateSystemStatus('offline');
                 } else {
                     this.loadChannels();
                     this.loadPremiumLinks();
@@ -1082,7 +1353,6 @@
             }
 
             showOfflineMode(showNotification = true) {
-                this.state.offlineMode = true;
                 this.updateSystemStatus('offline');
                 
                 const offlineChannels = Object.entries(this.state.channelHistory).map(([number, data]) => ({
@@ -2238,6 +2508,7 @@
             toggleStickyMode() {
                 this.state.stickyPlayer = !this.state.stickyPlayer;
                 localStorage.setItem('stickyPlayer', this.state.stickyPlayer);
+                this.elements.stickyPlayerToggle.checked = this.state.stickyPlayer;
                 this.toggleStickyPlayer(this.state.stickyPlayer);
             }
 
@@ -2256,6 +2527,7 @@
             togglePremiumMode() {
                 this.state.usePremium = !this.state.usePremium;
                 localStorage.setItem('usePremium', this.state.usePremium);
+                this.elements.premiumModeToggle.checked = this.state.usePremium;
                 if (this.state.currentStream) {
                     this.playChannel(this.state.currentStream);
                 }
@@ -2265,6 +2537,7 @@
             toggleGroupMode() {
                 this.state.isGrouped = !this.state.isGrouped;
                 localStorage.setItem('isGrouped', this.state.isGrouped);
+                this.elements.groupModeToggle.checked = this.state.isGrouped;
                 this.renderChannels();
                 const message = this.state.isGrouped ? 'Modo agrupado activado' : 'Modo agrupado desactivado';
                 this.showNotification(message);
@@ -2274,6 +2547,7 @@
                 this.state.isDarkMode = !this.state.isDarkMode;
                 document.body.classList.toggle('dark-mode', this.state.isDarkMode);
                 localStorage.setItem('darkMode', this.state.isDarkMode);
+                this.elements.darkModeToggle.checked = this.state.isDarkMode;
             }
 
             toggleFullscreen() {
@@ -2285,6 +2559,7 @@
                     this.state.fullscreen = true;
                 }
                 localStorage.setItem('fullscreen', this.state.fullscreen);
+                this.elements.fullscreenToggle.checked = this.state.fullscreen;
             }
 
             showNotification(message, duration = 2000) {
