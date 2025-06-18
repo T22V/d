@@ -982,11 +982,6 @@
                 </label>
             </div>
         </div>
-        <div class="settings-group">
-            <div class="settings-group-title">Acciones rápidas</div>
-            <button class="modal__btn modal__btn--primary" id="resetFiltersBtn" style="width: 100%; margin-bottom: 0.5rem;">Resetear filtros (&O)</button>
-            <button class="modal__btn modal__btn--secondary" id="restoreHiddenBtn" style="width: 100%;">Restaurar canales ocultos (&H)</button>
-        </div>
     </div>
 
     <script>
@@ -1018,8 +1013,6 @@
                     baseDomain: localStorage.getItem('baseDomain') || 'daddylivehd1.my',
                     tripleClickTimer: null,
                     clickCount: 0,
-                    minValidChannels: 50,
-                    backupMode: false,
                     searchIndex: null,
                     activeEmojiFilters: JSON.parse(localStorage.getItem('activeEmojiFilters')) || [],
                     searchTerm: localStorage.getItem('searchTerm') || '',
@@ -1104,9 +1097,7 @@
                     groupModeToggle: document.getElementById('groupModeToggle'),
                     stickyPlayerToggle: document.getElementById('stickyPlayerToggle'),
                     premiumModeToggle: document.getElementById('premiumModeToggle'),
-                    offlineModeToggle: document.getElementById('offlineModeToggle'),
-                    resetFiltersBtn: document.getElementById('resetFiltersBtn'),
-                    restoreHiddenBtn: document.getElementById('restoreHiddenBtn')
+                    offlineModeToggle: document.getElementById('offlineModeToggle')
                 };
 
                 if (this.state.isDarkMode) {
@@ -1158,30 +1149,6 @@
                 this.elements.offlineModeToggle.addEventListener('change', () => {
                     this.toggleOfflineMode();
                 });
-
-                this.elements.resetFiltersBtn.addEventListener('click', () => {
-                    this.applyFilter('all');
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    this.clearEmojiFilters();
-                    this.elements.settingsModal.classList.remove('settings-modal--active');
-                });
-
-                this.elements.restoreHiddenBtn.addEventListener('click', () => {
-                    const hiddenChannels = this.state.channels.filter(c => c.isHidden);
-                    if (hiddenChannels.length > 0) {
-                        if (confirm(`¿Quieres restaurar los ${hiddenChannels.length} canales ocultos?`)) {
-                            hiddenChannels.forEach(c => c.isHidden = false);
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                            this.renderChannels();
-                            this.showNotification('Canales ocultos restaurados');
-                        }
-                    } else {
-                        this.showNotification('No hay canales ocultos');
-                    }
-                    this.elements.settingsModal.classList.remove('settings-modal--active');
-                });
             }
 
             setupIntersectionObserver() {
@@ -1202,9 +1169,6 @@
                     if (e.target.closest('.channel-card')) {
                         const channelCard = e.target.closest('.channel-card');
                         const channelId = channelCard.dataset.id;
-                        if (this.state.currentFilter === 'all') {
-                            this.handleTripleClick(channelId);
-                        }
                         const channel = this.state.offlineMode ? 
                             this.getOfflineChannel(channelId) : 
                             this.state.channels.find(c => c.number === channelId);
@@ -1316,7 +1280,6 @@
                     number: channelNumber,
                     name: history.names[0],
                     isFavorite: history.isFavorite,
-                    isHidden: false,
                     url: `https://${this.state.baseDomain}/embed/stream-${channelNumber}.php`,
                     metadata: {
                         time: '',
@@ -1350,7 +1313,6 @@
                     number,
                     name: data.names[0],
                     isFavorite: data.isFavorite,
-                    isHidden: false,
                     url: `https://${this.state.baseDomain}/embed/stream-${number}.php`,
                     metadata: {
                         time: '',
@@ -1411,37 +1373,6 @@
                 this.renderChannels(true);
             }
 
-            handleTripleClick(channelId) {
-                this.state.clickCount++;
-                if (this.state.tripleClickTimer) {
-                    clearTimeout(this.state.tripleClickTimer);
-                }
-                this.state.tripleClickTimer = setTimeout(() => {
-                    this.state.clickCount = 0;
-                }, 500);
-
-                if (this.state.clickCount === 3) {
-                    this.state.clickCount = 0;
-                    if (confirm('¿Estás seguro de que quieres ocultar este canal?')) {
-                        const updatedChannels = this.state.channels.map(channel => 
-                            channel.number === channelId ? { ...channel, isHidden: true } : channel
-                        );
-                        
-                        this.state.channels = updatedChannels;
-                        localStorage.setItem('daddyliveChannels', JSON.stringify(updatedChannels));
-                        
-                        if (this.state.channelHistory[channelId]) {
-                            this.state.channelHistory[channelId].isHidden = true;
-                            localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
-                        }
-                        
-                        this.prepareFilterIndexes();
-                        this.renderChannels(true);
-                        this.showNotification('Canal ocultado');
-                    }
-                }
-            }
-
             async loadChannels() {
                 this.state.isLoading = true;
                 this.updateSystemStatus('loading');
@@ -1465,7 +1396,6 @@
                                         ...newChannel,
                                         name: savedChannel.name,
                                         isFavorite: savedChannel.isFavorite,
-                                        isHidden: savedChannel.isHidden,
                                         lastUpdated: savedChannel.lastUpdated || new Date().toISOString(),
                                         isCustom: savedChannel.isCustom || false
                                     };
@@ -1491,7 +1421,6 @@
                             this.state.channels = [...mergedChannels, ...customFavorites];
                             localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
                             
-                            this.state.backupMode = false;
                             this.renderChannels();
                             this.updateSystemStatus('healthy');
                             this.updateChannelCount();
@@ -1518,8 +1447,7 @@
                     if (!history[channel.number]) {
                         history[channel.number] = {
                             names: [channel.name],
-                            isFavorite: false,
-                            isHidden: false
+                            isFavorite: false
                         };
                         hasUpdates = true;
                     } else if (!history[channel.number].names.includes(channel.name)) {
@@ -1603,7 +1531,6 @@
                                         number: channelNumber,
                                         name: channelName,
                                         isFavorite: false,
-                                        isHidden: false,
                                         url: link.href,
                                         metadata: {
                                             time: adjustedTime || '',
@@ -1617,10 +1544,6 @@
                             }
                         });
                     });
-
-                    if (validLinkChannels < this.state.minValidChannels) {
-                        this.state.backupMode = true;
-                    }
 
                     this.prepareFilterIndexes();
                     return channels;
@@ -1778,8 +1701,7 @@
                 if (!this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber] = {
                         names: [this.state.currentStream.name],
-                        isFavorite: false,
-                        isHidden: false
+                        isFavorite: false
                     };
                 }
                 localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
@@ -1911,7 +1833,6 @@
                             number,
                             name: data.names[0],
                             isFavorite: data.isFavorite,
-                            isHidden: false,
                             metadata: {
                                 time: '',
                                 event: '',
@@ -1941,7 +1862,7 @@
                     
                     return offlineChannels;
                 } else {
-                    let filtered = this.state.channels.filter(channel => !channel.isHidden);
+                    let filtered = [...this.state.channels];
                     
                     const seenChannels = new Set();
                     filtered = filtered.filter(channel => {
@@ -2078,7 +1999,6 @@
                         }));
                 } else {
                     this.state.searchIndex = this.state.channels
-                        .filter(channel => !channel.isHidden)
                         .map(channel => ({
                             id: channel.number,
                             text: `${channel.name} ${channel.number} ${channel.metadata?.event || ''} ${channel.metadata?.time || ''} ${channel.metadata?.sport || ''}`.toLowerCase()
@@ -2232,7 +2152,7 @@
                     'Football': 'Fútbol',
                     'Soccer': 'Fútbol',
                     'Basketball': 'Baloncesto',
-                    'Tennis': 'Tenis',
+                    'Tenis': 'Tenis',
                     'Baseball': 'Béisbol',
                     'Boxing': 'Boxeo',
                     'Handball': 'Balonmano',
@@ -2360,7 +2280,6 @@
                     ...this.state.currentStream,
                     name: favoriteName,
                     isFavorite: true,
-                    isHidden: false,
                     lastUpdated: new Date().toISOString(),
                     isCustom: true,
                     metadata: {
@@ -2380,8 +2299,7 @@
                 if (!this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber] = {
                         names: [favoriteName],
-                        isFavorite: true,
-                        isHidden: false
+                        isFavorite: true
                     };
                 } else {
                     this.state.channelHistory[channelNumber].isFavorite = true;
@@ -2444,7 +2362,7 @@
                     const count = Object.keys(this.state.channelHistory).length;
                     this.elements.channelCount.textContent = `${count}`;
                 } else {
-                    const count = this.state.channels.filter(c => !c.isHidden).length;
+                    const count = this.state.channels.length;
                     this.elements.channelCount.textContent = `${count}`;
                 }
             }
@@ -2464,7 +2382,6 @@
                             number: newNumber.toString(),
                             name: `Canal ${newNumber}`,
                             isFavorite: false,
-                            isHidden: false,
                             url: `https://${this.state.baseDomain}/embed/stream-${newNumber}.php`,
                             metadata: {
                                 time: '',
@@ -2475,7 +2392,7 @@
                         });
                     }
                 } else {
-                    const nextChannel = this.state.channels.find(c => c.number === newNumber.toString() && !c.isHidden);
+                    const nextChannel = this.state.channels.find(c => c.number === newNumber.toString());
                     if (nextChannel) {
                         this.playChannel(nextChannel);
                     } else {
@@ -2483,7 +2400,6 @@
                             number: newNumber.toString(),
                             name: `Canal ${newNumber}`,
                             isFavorite: false,
-                            isHidden: false,
                             url: `https://${this.state.baseDomain}/embed/stream-${newNumber}.php`,
                             metadata: {
                                 time: '',
@@ -2572,13 +2488,7 @@
                 const value = this.elements.searchInput.value.trim();
                 
                 // Comandos especiales (se borran completamente)
-                if (value === '&O') {
-                    this.applyFilter('all');
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&D') {
+                if (value === '&D') {
                     this.toggleDarkMode();
                     this.state.searchTerm = '';
                     this.elements.searchInput.value = '';
@@ -2598,22 +2508,6 @@
                     return;
                 } else if (value === '&P') {
                     this.togglePremiumMode();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&H') {
-                    const hiddenChannels = this.state.channels.filter(c => c.isHidden);
-                    if (hiddenChannels.length > 0) {
-                        if (confirm(`¿Quieres restaurar los ${hiddenChannels.length} canales ocultos?`)) {
-                            hiddenChannels.forEach(c => c.isHidden = false);
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                            this.renderChannels();
-                            this.showNotification('Canales ocultos restaurados');
-                        }
-                    } else {
-                        this.showNotification('No hay canales ocultos');
-                    }
                     this.state.searchTerm = '';
                     this.elements.searchInput.value = '';
                     localStorage.removeItem('searchTerm');
@@ -2639,7 +2533,6 @@
                                 number: channelNumber,
                                 name: `Canal ${channelNumber}`,
                                 isFavorite: false,
-                                isHidden: false,
                                 url: `https://${this.state.baseDomain}/embed/stream-${channelNumber}.php`,
                                 metadata: {
                                     time: '',
@@ -2650,7 +2543,7 @@
                             });
                         }
                     } else {
-                        const channel = this.state.channels.find(c => c.number === channelNumber && !c.isHidden);
+                        const channel = this.state.channels.find(c => c.number === channelNumber);
                         
                         if (channel) {
                             this.playChannel(channel);
@@ -2659,7 +2552,6 @@
                                 number: channelNumber,
                                 name: `Canal ${channelNumber}`,
                                 isFavorite: false,
-                                isHidden: false,
                                 url: `https://${this.state.baseDomain}/embed/stream-${channelNumber}.php`,
                                 metadata: {
                                     time: '',
