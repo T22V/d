@@ -602,26 +602,7 @@
 
         /* Botón de ajustes flotante */
         .settings-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            z-index: 999;
-            transition: all 0.3s ease;
-        }
-        .settings-button:hover {
-            background: var(--primary-dark);
-            transform: scale(1.1);
+            display: none;
         }
         .settings-modal {
             position: fixed;
@@ -948,7 +929,7 @@
         <div class="spinner"></div>
     </div>
 
-    <!-- Botón de ajustes flotante -->
+    <!-- Botón de ajustes flotante (oculto) -->
     <div class="settings-button" id="settingsButton">⚙️</div>
     <div class="settings-modal" id="settingsModal">
         <button class="settings-close" id="settingsClose">×</button>
@@ -1044,7 +1025,9 @@
                     searchTerm: localStorage.getItem('searchTerm') || '',
                     isGrouped: localStorage.getItem('isGrouped') === 'true',
                     channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || [],
-                    offlineMode: localStorage.getItem('offlineMode') === 'true'
+                    offlineMode: localStorage.getItem('offlineMode') === 'true',
+                    clearButtonClickCount: 0,
+                    lastClearButtonClickTime: 0
                 };
                 this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                 
@@ -1138,7 +1121,7 @@
 
                 if (this.state.fullscreen) {
                     document.documentElement.requestFullscreen();
-                    this.elements.fullscreenToggle.checked = true;
+                    this.state.fullscreen = true;
                 }
 
                 this.elements.offlineIndicator.style.display = this.state.offlineMode ? 'block' : 'none';
@@ -1148,10 +1131,6 @@
             }
 
             setupSettingsModal() {
-                this.elements.settingsButton.addEventListener('click', () => {
-                    this.elements.settingsModal.classList.toggle('settings-modal--active');
-                });
-
                 this.elements.settingsClose.addEventListener('click', () => {
                     this.elements.settingsModal.classList.remove('settings-modal--active');
                 });
@@ -1244,7 +1223,19 @@
                     }
 
                     if (e.target.id === 'clearEmojiFilters') {
-                        this.clearEmojiFilters();
+                        const now = Date.now();
+                        if (now - this.state.lastClearButtonClickTime > 1000) {
+                            this.state.clearButtonClickCount = 0;
+                        }
+                        this.state.clearButtonClickCount++;
+                        this.state.lastClearButtonClickTime = now;
+
+                        if (this.state.clearButtonClickCount >= 3) {
+                            this.elements.settingsModal.classList.toggle('settings-modal--active');
+                            this.state.clearButtonClickCount = 0;
+                        } else {
+                            this.clearEmojiFilters();
+                        }
                     }
 
                     if (e.target.closest('.channel-list-item')) {
