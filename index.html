@@ -2315,8 +2315,9 @@
 
                 if (!this.state.currentStream) return;
 
-                const existingFavoriteIndex = this.state.channels.findIndex(
-                    c => c.number === this.state.currentStream.number && c.isFavorite
+                // Buscar y actualizar el canal en el estado
+                const channelIndex = this.state.channels.findIndex(
+                    c => c.number === this.state.currentStream.number
                 );
 
                 const favoriteChannel = {
@@ -2332,12 +2333,15 @@
                     }
                 };
 
-                if (existingFavoriteIndex !== -1) {
-                    this.state.channels[existingFavoriteIndex] = favoriteChannel;
+                if (channelIndex !== -1) {
+                    // Actualizar el canal existente
+                    this.state.channels[channelIndex] = favoriteChannel;
                 } else {
+                    // Añadir nuevo canal si no existe
                     this.state.channels.push(favoriteChannel);
                 }
 
+                // Actualizar el historial
                 const channelNumber = this.state.currentStream.number;
                 if (!this.state.channelHistory[channelNumber]) {
                     this.state.channelHistory[channelNumber] = {
@@ -2351,11 +2355,13 @@
                     }
                 }
 
+                // Guardar en localStorage
                 localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
-                
                 localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                
+
+                // Actualizar la UI
                 this.elements.favoriteBtn.classList.add('control-btn--active');
+                this.state.currentStream.isFavorite = true; // Actualizar el stream actual
                 this.hideFavoriteModal();
                 this.showNotification('Favorito guardado permanentemente');
                 
