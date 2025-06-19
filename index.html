@@ -1030,11 +1030,10 @@
                     lastClearButtonClickTime: 0,
                     internationalFilter: localStorage.getItem('internationalFilter') === 'true',
                     filteredKeywords: [
-                        "Cricket", "Russia", "France","Bulgaria","NZ","BR","Morocco","Hungary", "Tennis", "DE", "NL", 
-                        "Poland", "Malaysia", "Serbia", "Cyprus", "Croatia", "Israel",
-                        "Football", "SE", "Italy", "Greece", "Brazil", "Portugal", 
-                        "Czech", "MLB", "Denmark", "MENA", "Romania", "Disney",
-                        "NICK JR", "Turkey"
+                        "Cricket", "Russia", "France", "Golf", "IT", "Slovakia", "Sweden", "Bulgaria", "NZ", "BR", "Morocco", "Hungary", 
+                        "Tennis", "DE", "NL", "Poland", "Malaysia", "Serbia", "Cyprus", "Croatia", 
+                        "Israel", "Football", "SE", "Italy", "Greece", "Brazil", "Portugal", 
+                        "Czech", "MLB", "Denmark", "MENA", "Romania", "Disney", "NICK JR", "Turkey"
                     ]
                 };
                 this.activeEmojiFilters = [...this.state.activeEmojiFilters];
@@ -1911,10 +1910,12 @@
                     // Aplicar filtro de canales internacionales si está activado
                     if (this.state.internationalFilter) {
                         filtered = filtered.filter(channel => {
-                            const channelName = channel.name.toLowerCase();
-                            return !this.state.filteredKeywords.some(keyword => 
-                                channelName.includes(keyword.toLowerCase())
-                            );
+                            const channelName = channel.name;
+                            return !this.state.filteredKeywords.some(keyword => {
+                                // Busca la palabra clave exacta (case-sensitive) como palabra completa
+                                const regex = new RegExp(`(^|\\s|\\W)${keyword}(\\s|\\W|$)`, 'g');
+                                return regex.test(channelName);
+                            });
                         });
                     }
 
