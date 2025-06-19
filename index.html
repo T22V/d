@@ -981,6 +981,13 @@
                     <span class="settings-slider"></span>
                 </label>
             </div>
+            <div class="settings-item">
+                <span class="settings-label">Filtrar canales internacionales (&I)</span>
+                <label class="settings-switch">
+                    <input type="checkbox" id="internationalFilterToggle">
+                    <span class="settings-slider"></span>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -1020,7 +1027,15 @@
                     channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || [],
                     offlineMode: localStorage.getItem('offlineMode') === 'true',
                     clearButtonClickCount: 0,
-                    lastClearButtonClickTime: 0
+                    lastClearButtonClickTime: 0,
+                    internationalFilter: localStorage.getItem('internationalFilter') === 'true',
+                    filteredKeywords: [
+                        "Cricket", "Russia", "France","Bulgaria","NZ","BR","Morocco","Hungary", "Tennis", "DE", "NL", 
+                        "Poland", "Malaysia", "Serbia", "Cyprus", "Croatia", "Israel",
+                        "Football", "SE", "Italy", "Greece", "Brazil", "Portugal", 
+                        "Czech", "MLB", "Denmark", "MENA", "Romania", "Disney",
+                        "NICK JR", "Turkey"
+                    ]
                 };
                 this.activeEmojiFilters = [...this.state.activeEmojiFilters];
                 
@@ -1097,7 +1112,8 @@
                     groupModeToggle: document.getElementById('groupModeToggle'),
                     stickyPlayerToggle: document.getElementById('stickyPlayerToggle'),
                     premiumModeToggle: document.getElementById('premiumModeToggle'),
-                    offlineModeToggle: document.getElementById('offlineModeToggle')
+                    offlineModeToggle: document.getElementById('offlineModeToggle'),
+                    internationalFilterToggle: document.getElementById('internationalFilterToggle')
                 };
 
                 if (this.state.isDarkMode) {
@@ -1119,6 +1135,7 @@
                 this.elements.offlineModeToggle.checked = this.state.offlineMode;
                 this.elements.premiumModeToggle.checked = this.state.usePremium;
                 this.elements.groupModeToggle.checked = this.state.isGrouped;
+                this.elements.internationalFilterToggle.checked = this.state.internationalFilter;
             }
 
             setupSettingsModal() {
@@ -1149,6 +1166,21 @@
                 this.elements.offlineModeToggle.addEventListener('change', () => {
                     this.toggleOfflineMode();
                 });
+
+                this.elements.internationalFilterToggle.addEventListener('change', () => {
+                    this.toggleInternationalFilter();
+                });
+            }
+
+            toggleInternationalFilter() {
+                this.state.internationalFilter = !this.state.internationalFilter;
+                localStorage.setItem('internationalFilter', this.state.internationalFilter);
+                this.elements.internationalFilterToggle.checked = this.state.internationalFilter;
+                this.renderChannels();
+                const message = this.state.internationalFilter ? 
+                    'Filtro de canales internacionales activado' : 
+                    'Filtro de canales internacionales desactivado';
+                this.showNotification(message);
             }
 
             setupIntersectionObserver() {
@@ -1876,6 +1908,16 @@
                         return true;
                     });
 
+                    // Aplicar filtro de canales internacionales si está activado
+                    if (this.state.internationalFilter) {
+                        filtered = filtered.filter(channel => {
+                            const channelName = channel.name.toLowerCase();
+                            return !this.state.filteredKeywords.some(keyword => 
+                                channelName.includes(keyword.toLowerCase())
+                            );
+                        });
+                    }
+
                     switch (type) {
                         case 'live':
                             const potentialLiveChannels = filtered.filter(channel => {
@@ -2514,6 +2556,12 @@
                     return;
                 } else if (value === '&X') {
                     this.toggleOfflineMode();
+                    this.state.searchTerm = '';
+                    this.elements.searchInput.value = '';
+                    localStorage.removeItem('searchTerm');
+                    return;
+                } else if (value === '&I') {
+                    this.toggleInternationalFilter();
                     this.state.searchTerm = '';
                     this.elements.searchInput.value = '';
                     localStorage.removeItem('searchTerm');
