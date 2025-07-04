@@ -374,6 +374,15 @@
       margin-bottom: 1rem;
       text-align: center;
     }
+    .update-notification {
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: 600;
+    }
     .player-section--sticky {
       position: sticky;
       top: 0;
@@ -473,6 +482,7 @@
     </div>
     
     <div id="offlineMessage" class="offline-message" style="display: none;">Modo offline: mostrando canales del historial</div>
+    <div id="updateNotification" class="update-notification" style="display: none;"></div>
     <div class="channels-grid" id="results">Cargando canales...</div>
   </div>
 
@@ -541,8 +551,25 @@
       'Swimming': 'Natación', 'Athletics': 'Atletismo', 'Darts': 'Dardos'
     };
 
+    const monthTranslations = {
+      'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+      'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+      'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+    };
+
     function translateSport(sport) {
       return sportTranslations[sport] || sport;
+    }
+
+    function translateDate(dateStr) {
+      const parts = dateStr.split(' ');
+      if (parts.length < 4) return dateStr;
+      
+      const day = parts[1].replace(/(\d+)(st|nd|rd|th)/, '$1');
+      const month = monthTranslations[parts[2]] || parts[2];
+      const year = parts[3];
+      
+      return `${parts[0]} ${day} de ${month} de ${year}`;
     }
 
     function adjustTime(time) {
@@ -599,22 +626,19 @@
       const currentNumber = parseInt(state.currentChannel.number);
       let newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
       
-      // Asegurarnos de que el número no sea negativo
       newNumber = Math.max(1, newNumber);
       
-      // Buscar el siguiente canal disponible
       let nextChannel = state.channels.find(c => parseInt(c.number) === newNumber);
       
-      // Si no encontramos el canal exacto, buscar el más cercano
       if (!nextChannel) {
         const sortedChannels = [...state.channels].sort((a, b) => parseInt(a.number) - parseInt(b.number));
         
         if (direction === 'next') {
           nextChannel = sortedChannels.find(c => parseInt(c.number) > currentNumber);
-          if (!nextChannel) nextChannel = sortedChannels[0]; // Volver al primero si no hay siguiente
+          if (!nextChannel) nextChannel = sortedChannels[0];
         } else {
           nextChannel = [...sortedChannels].reverse().find(c => parseInt(c.number) < currentNumber);
-          if (!nextChannel) nextChannel = sortedChannels[sortedChannels.length - 1]; // Ir al último si no hay anterior
+          if (!nextChannel) nextChannel = sortedChannels[sortedChannels.length - 1];
         }
       }
       
@@ -895,6 +919,17 @@
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
 
+        // Extraer la fecha de actualización
+        const updateDateElement = doc.querySelector('h2[style*="background-color: #ff0000"]');
+        if (updateDateElement) {
+          const updateDateText = updateDateElement.textContent.trim();
+          const translatedDate = translateDate(updateDateText);
+          const notification = document.getElementById('updateNotification');
+          notification.textContent = `Actualizado: ${translatedDate}`;
+          notification.style.display = 'block';
+          setTimeout(() => notification.style.display = 'none', 5000);
+        }
+
         const newChannels = [];
         let currentSport = 'General';
 
@@ -980,7 +1015,6 @@
       }
     }
 
-    // Inicialización
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
       document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
@@ -1015,7 +1049,6 @@
       document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
       document.getElementById('groupChannelsToggle').checked = state.groupChannels;
       
-      // Configurar estado inicial del reproductor sticky
       if (state.stickyPlayer) {
         document.getElementById('playerSection').classList.add('player-section--sticky');
         document.getElementById('toggleStickyBtn').innerHTML = '⛉';
