@@ -1,2724 +1,495 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no" name="viewport"/>
-    <title>📺</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1e50c7;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --warning: #d97706;
-            --bg-dark: #0f172a;
-            --bg-light: #f1f5f9;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --radius-sm: 6px;
-            --radius-md: 10px;
-        }
-        body.dark-mode {
-            --bg-light: #0f172a;
-            --card-bg: #1e293b;
-            --text: #f8fafc;
-            --border-color: #334155;
-        }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-        body {
-            background-color: var(--bg-light);
-            color: var(--text);
-            line-height: 1.6;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            font-size: 14px;
-        }
-        .header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            z-index: 10;
-            order: 1;
-        }
-        .header__actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .header__left-buttons,
-        .header__right-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        .header-button {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-        .header-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-        .status-badge {
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            background-color: var(--success);
-            color: white;
-        }
-        .status-badge--warning {
-            background-color: var(--warning);
-        }
-        .status-badge--danger {
-            background-color: var(--danger);
-        }
-        .channel-count {
-            font-size: 0.8rem;
-            color: white;
-            opacity: 0.8;
-        }
-        .main-container {
-            max-width: 1400px;
-            margin: 1rem auto;
-            padding: 0 1rem;
-            display: flex;
-            flex-direction: column;
-        }
-        .player-section {
-            margin-bottom: 1rem;
-            position: relative;
-        }
-        .player-section--sticky {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            transition: all 0.3s ease;
-            margin-bottom: 1rem;
-        }
-        .player-container {
-            background: black;
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-            position: relative;
-            width: 100%;
-            height: calc(57vw + 40px);
-            max-height: 85vh;
-            display: none;
-        }
-        .player-container--active {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-        #videoFrame {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        #videoPlayer {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .player-controls {
-            display: none;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 10px;
-            padding: 10px;
-            background: var(--card-bg);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            position: relative;
-        }
-        .player-controls--active {
-            display: flex;
-        }
-        .control-btn {
-            background: var(--primary);
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        .control-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.1);
-        }
-        .control-btn--active {
-            background: var(--primary-dark);
-            color: white;
-            transform: scale(1.1);
-        }
-        .channel-info {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text);
-            font-size: 0.9rem;
-            font-weight: 600;
-            max-width: 150px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .channel-number-display {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        .search-filters {
-            background: var(--card-bg);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: var(--shadow-sm);
-            transition: background-color 0.3s ease;
-        }
-        .search-box {
-            position: relative;
-            margin-bottom: 0.8rem;
-        }
-        .search-box__input {
-            width: 100%;
-            padding: 0.6rem 1rem 0.6rem 2.2rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            background-color: var(--card-bg);
-            color: var(--text);
-            transition: all 0.3s ease;
-        }
-        .search-box__input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-        }
-        .search-box__icon {
-            position: absolute;
-            left: 0.8rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text);
-            font-size: 0.9rem;
-        }
-        .filter-buttons {
-            display: flex;
-            gap: 0.6rem;
-            margin-top: 0.8rem;
-        }
-        .filter-button {
-            flex: 1;
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            background: var(--card-bg);
-            color: var(--text);
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .filter-button:hover {
-            border-color: var(--primary);
-        }
-        .filter-button--active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-        .filter-button--favorites {
-            flex: 0 0 auto !important;
-            width: 36px;
-            min-width: 36px !important;
-            padding: 0.5rem 0 !important;
-        }
-        .filter-button--clear {
-            flex: 0 0 auto !important;
-            width: 36px;
-            min-width: 36px !important;
-            padding: 0.5rem 0 !important;
-        }
-        .emoji-filters {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-        .emoji-filter-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            padding: 0;
-        }
-        .emoji-filter-btn:hover {
-            transform: scale(1.1);
-            box-shadow: var(--shadow-sm);
-        }
-        .emoji-filter-btn--active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            transform: scale(1.1);
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
-        }
-        .channels-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .channel-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s ease;
-            contain: content;
-            will-change: transform, box-shadow;
-        }
-        .channel-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-sm);
-            border-color: var(--primary);
-        }
-        .channel-card--live::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--danger);
-        }
-        .channel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .channel-time {
-            font-size: 0.75rem;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .channel-time--live::before {
-            content: "";
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: var(--danger);
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-        .channel-name {
-            font-weight: 600;
-            line-height: 1.3;
-            color: var(--text);
-            font-size: 0.95rem;
-            text-align: center;
-            flex-grow: 1;
-            padding: 0 0.5rem;
-        }
-        .channel-number {
-            font-size: 0.75rem;
-            color: var(--primary);
-            font-weight: 600;
-        }
-        .channel-event {
-            font-size: 0.8rem;
-            color: var(--text);
-            margin-top: 0.5rem;
-        }
-        .channel-sport {
-            font-size: 0.7rem;
-            color: var(--primary);
-            margin-top: 0.2rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .channel-group {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 0;
-            margin-bottom: 1rem;
-            box-shadow: var(--shadow-sm);
-            align-self: start;
-            height: auto;
-        }
-        .channel-group__header {
-            padding: 0.8rem 1rem;
-            background: rgba(37, 99, 235, 0.1);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .channel-group__title {
-            font-weight: 600;
-            color: var(--text);
-        }
-        .channel-group__sport {
-            font-size: 0.8rem;
-            color: var(--primary);
-            margin-top: 0.2rem;
-        }
-        .channel-group__content {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 0.8rem;
-            padding: 0.8rem;
-            grid-auto-rows: min-content;
-            height: auto !important;
-        }
-        .channel-group__content--single {
-            grid-template-columns: 1fr;
-        }
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .loading--active {
-            display: flex;
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s ease-in-out infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1001;
-        }
-        .modal--active {
-            display: flex;
-        }
-        .modal__content {
-            background: var(--card-bg);
-            border-radius: var(--radius-md);
-            padding: 1.2rem;
-            width: 90%;
-            max-width: 350px;
-            box-shadow: var(--shadow-sm);
-        }
-        .modal__title {
-            margin-bottom: 0.8rem;
-            color: var(--text);
-            font-size: 1.1rem;
-        }
-        .modal__input {
-            width: 100%;
-            padding: 0.7rem;
-            margin-bottom: 0.8rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            background: var(--card-bg);
-            color: var(--text);
-            font-size: 0.9rem;
-        }
-        .modal__actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.6rem;
-        }
-        .modal__btn {
-            padding: 0.5rem 0.8rem;
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .modal__btn--primary {
-            background: var(--primary);
-            color: white;
-        }
-        .modal__btn--secondary {
-            background: var(--border-color);
-            color: var(--text);
-        }
-        .channel-list-item {
-            padding: 0.8rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .channel-list-item:hover {
-            background-color: rgba(37, 99, 235, 0.1);
-        }
-        .channel-list-item--active {
-            background-color: rgba(37, 99, 235, 0.2);
-            border-left: 3px solid var(--primary);
-        }
-        .update-notification {
-            position: fixed;
-            bottom: 70px;
-            right: 15px;
-            background: var(--primary);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            box-shadow: var(--shadow-sm);
-            z-index: 100;
-            display: none;
-            animation: slideIn 0.3s ease-out;
-        }
-        .no-results-message {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 2rem;
-            color: var(--text);
-        }
-        .reset-filters-btn {
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-        .reset-filters-btn:hover {
-            background: var(--primary-dark);
-        }
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Estilos para el modo offline*/
-        .mode-toggle {
-            background: var(--primary);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin-left: auto;
-            transition: all 0.2s;
-            border: none;
-        }
-        .mode-toggle:hover {
-            background: var(--primary-dark);
-        }
-        .offline-indicator {
-            background: var(--warning);
-            color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        /* Botón de ajustes flotante */
-        .settings-button {
-            display: none;
-        }
-        .settings-modal {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            width: 300px;
-            max-height: 70vh;
-            background: var(--card-bg);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            padding: 1rem;
-            z-index: 1000;
-            display: none;
-            overflow-y: auto;
-            transition: all 0.3s ease;
-        }
-        .settings-modal--active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        .settings-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text);
-            text-align: center;
-        }
-        .settings-group {
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-        }
-        .settings-group:last-child {
-            border-bottom: none;
-        }
-        .settings-group-title {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--text);
-        }
-        .settings-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .settings-label {
-            font-size: 0.9rem;
-            color: var(--text);
-        }
-        .settings-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        .settings-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .settings-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        .settings-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .settings-slider {
-            background-color: var(--primary);
-        }
-        input:checked + .settings-slider:before {
-            transform: translateX(26px);
-        }
-        .settings-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: var(--text);
-        }
-
-        /* Media queries optimizadas */
-        @media (max-width: 768px) {
-            .header {
-                padding: 0.8rem;
-            }
-            .header-button {
-                width: 32px;
-                height: 32px;
-                font-size: 0.8rem;
-            }
-            .main-container {
-                padding: 0 0.8rem;
-            }
-            .channels-grid,
-            .channel-group__content {
-                grid-template-columns: 1fr;
-            }
-            .filter-buttons {
-                flex-wrap: nowrap;
-                gap: 0.6rem;
-            }
-            .filter-button {
-                min-width: auto;
-                flex: 1;
-            }
-            .filter-button--favorites,
-            .filter-button--clear {
-                min-width: 36px !important;
-                flex: 0 0 36px !important;
-            }
-            .emoji-filters {
-                gap: 6px;
-            }
-            .emoji-filter-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
-            }
-            .player-controls {
-                flex-wrap: nowrap;
-                gap: 8px;
-                padding: 8px;
-            }
-            .channel-info, 
-            .channel-number-display {
-                position: static;
-                transform: none;
-                font-size: 0.75rem;
-                max-width: 30%;
-            }
-            .channel-info {
-                text-align: left;
-                flex: 1;
-            }
-            .channel-number-display {
-                text-align: right;
-                margin-left: auto;
-            }
-            .control-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 0.9rem;
-            }
-            .update-notification {
-                bottom: 120px;
-                left: 15px;
-                right: 15px;
-                text-align: center;
-            }
-            .mode-toggle {
-                padding: 0.5rem;
-                font-size: 0.8rem;
-            }
-            .settings-modal {
-                width: 280px;
-                right: 10px;
-                bottom: 70px;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .channels-grid,
-            .channel-group__content {
-                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-                gap: 1.2rem;
-            }
-            .channel-card {
-                padding: 1.2rem;
-            }
-            .channel-name {
-                font-size: 1rem;
-            }
-            .channel-event {
-                font-size: 0.9rem;
-            }
-            .channel-sport {
-                font-size: 0.8rem;
-            }
-            .channel-group__header {
-                padding: 1rem;
-            }
-            .channel-group__title {
-                font-size: 1rem;
-            }
-            .player-container {
-                height: calc(40vw + 40px);
-            }
-            .player-controls {
-                padding: 12px;
-                gap: 12px;
-            }
-            .control-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 1.1rem;
-            }
-            .channel-info,
-            .channel-number-display {
-                font-size: 1rem;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .main-container {
-                max-width: 95%;
-            }
-            .channels-grid,
-            .channel-group__content {
-                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            }
-            .modal__content {
-                max-width: 600px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+  <title>📺</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e50c7;
+      --bg-light: #f1f5f9;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --radius-md: 10px;
+      --radius-sm: 6px;
+    }
+    body {
+      background: var(--bg-light);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+    .main-container {
+      max-width: 1400px;
+      margin: 1rem auto;
+      padding: 0 1rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 0 1rem;
+    }
+    .search-filters {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .search-box {
+      position: relative;
+      margin-bottom: 0.8rem;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 0.6rem 1rem 0.6rem 2.2rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      background-color: var(--card-bg);
+      color: var(--text);
+      box-sizing: border-box;
+    }
+    .search-box::before {
+      content: "🔍";
+      position: absolute;
+      left: 0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.8rem;
+    }
+    .filter-button {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--card-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .filter-button--active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .filter-button--favorites, .filter-button--clear {
+      flex: 0 0 auto;
+      width: 36px;
+      min-width: 36px;
+      padding: 0.5rem 0;
+    }
+    .emoji-filters {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .emoji-filter-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .emoji-filter-btn--active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .channel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+    .channel-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--primary);
+    }
+    .channel-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .channel-name {
+      font-weight: 600;
+      flex-grow: 1;
+      padding: 0 0.5rem;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+    .channel-number {
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    .channel-time {
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .channel-time--live::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #dc2626;
+      animation: pulse 1.5s infinite;
+    }
+    .channel-event {
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .channel-sport {
+      font-size: 0.7rem;
+      color: var(--primary);
+      margin-top: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-container {
+      background: black;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      width: 100%;
+      height: calc(57vw + 40px);
+      max-height: 85vh;
+      display: none;
+      margin-bottom: 1rem;
+    }
+    .player-container--active {
+      display: block;
+    }
+    #videoFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .player-controls {
+      display: none;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .player-controls--active {
+      display: flex;
+    }
+    .control-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+    @media (max-width: 768px) {
+      .channels-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-buttons {
+        flex-wrap: nowrap;
+      }
+    }
+    @media (min-width: 768px) {
+      .channels-grid {
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      }
+      .channel-name {
+        font-size: 1rem;
+      }
+      .channel-event {
+        font-size: 0.9rem;
+      }
+      .channel-sport {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <main class="main-container">
-        <section class="player-section" id="playerSection">
-            <div class="player-container" id="playerContainer">
-                <video controls="" id="videoPlayer"></video>
-            </div>
-            <div class="player-controls" id="playerControls">
-                <span class="channel-info" id="channelInfo"></span>
-                <button class="control-btn" id="prevChannelBtn" title="Canal anterior">◄</button>
-                <button class="control-btn" id="nextChannelBtn" title="Canal siguiente">►</button>
-                <button class="control-btn" id="toggleStickyBtn" title="Fijar reproductor">⛊</button>
-                <button class="control-btn" id="favoriteBtn" title="Guardar favorito">★</button>
-                <button class="control-btn" id="closePlayerBtn" title="Cerrar">×</button>
-                <span class="channel-number-display" id="channelNumberDisplay"></span>
-            </div>
-        </section>
-        <section class="search-filters">
-            <div class="search-box">
-                <span class="search-box__icon">🔍</span>
-                <input class="search-box__input" id="searchInput" placeholder="Buscar canales, número (ej: #123) o hora (ej: 15:30)" type="text"/>
-            </div>
-            <div class="filter-buttons">
-                <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
-                <button class="filter-button filter-button--active" id="filterAll">Todos</button>
-                <button class="filter-button" id="filterLive">Directo</button>
-                <button class="filter-button filter-button--clear" id="clearEmojiFilters">x</button>
-            </div>
-            <div class="emoji-filters" id="emojiFilters">
-                <button class="emoji-filter-btn" data-filter="TV Shows" title="TV Shows">📺</button>
-                <button class="emoji-filter-btn" data-filter="Fútbol" title="Fútbol">⚽</button>
-                <button class="emoji-filter-btn" data-filter="Baloncesto" title="Baloncesto">🏀</button>
-                <button class="emoji-filter-btn" data-filter="Tenis" title="Tenis">🎾</button>
-                <button class="emoji-filter-btn" data-filter="MMA" title="MMA">👊</button>
-                <button class="emoji-filter-btn" data-filter="Boxeo" title="Boxeo">🥊</button>
-                <button class="emoji-filter-btn" data-filter="Motorsport" title="Motorsport">🏁</button>
-                <button class="emoji-filter-btn" data-filter="Formula 1" title="Formula 1">🏎️</button>
-                <button class="emoji-filter-btn" data-filter="Spain ES Movistar M+" title="España">🇪🇸</button>
-            </div>
-        </section>
-        <section class="channels-grid" id="channelsGrid">
-            <div class="loading-placeholder">
-                <p>Cargando canales...</p>
-            </div>
-        </section>
-    </main>
-    <header class="header">
-        <div class="header__left-buttons">
-            <button class="header-button" id="lsButton">LS</button>
-            <button class="header-button" id="shButton">SH</button>
-            <button class="header-button" id="wrButton">WR</button>
-            <button class="header-button" id="stButton">ST</button>
-        </div>
-        <div class="header__actions">
-            <span>Estado:</span>
-            <span class="status-badge" id="statusBadge">Cargando...</span>
-            <span class="channel-count" id="channelCount">0 canales</span>
-            <span class="offline-indicator" id="offlineIndicator" style="display: none;">OFFLINE</span>
-        </div>
-        <div class="header__right-buttons">
-            <button class="header-button" onclick="window.open('https://ziggy079w.toolcirclef6mua.cfd/es', '_blank')">SR</button>
-            <button class="header-button" onclick="window.open('https://www.fctv77.live/es', '_blank')">FC</button>
-            <button class="header-button" onclick="window.open('https://antenaplanet.store/', '_blank')">AP</button>
-            <button class="header-button" onclick="window.open('https://antenaplanet.store/tvschedule.php', '_blank')">PS</button>
-        </div>
-    </header>
-    <div class="modal" id="channelListModal">
-        <div class="modal__content">
-            <h3 class="modal__title">Lista de Canales</h3>
-            <input class="modal__input" id="channelListSearch" placeholder="Buscar canales..." type="text"/>
-            <div id="channelListContent" style="max-height: 350px; overflow-y: auto; margin-bottom: 0.8rem;"></div>
-            <div class="modal__actions">
-                <button class="modal__btn modal__btn--secondary" id="closeChannelListBtn">Cerrar</button>
-            </div>
-        </div>
+  <div class="main-container">
+    <h1>Scraper DaddyliveHD</h1>
+    
+    <div class="player-container" id="playerContainer">
+      <iframe id="videoFrame" allowfullscreen></iframe>
     </div>
-    <div class="modal" id="favoriteModal">
-        <div class="modal__content">
-            <h3 class="modal__title">Guardar Favorito</h3>
-            <input class="modal__input" id="favoriteNameInput" placeholder="Nombre personalizado" type="text"/>
-            <div class="modal__actions">
-                <button class="modal__btn modal__btn--secondary" id="cancelFavoriteBtn">Cancelar</button>
-                <button class="modal__btn modal__btn--primary" id="saveFavoriteBtn">Guardar</button>
-            </div>
-        </div>
+    
+    <div class="player-controls" id="playerControls">
+      <button class="control-btn" id="prevChannelBtn">◄</button>
+      <button class="control-btn" id="nextChannelBtn">►</button>
+      <button class="control-btn" id="closePlayerBtn">×</button>
     </div>
-    <div class="update-notification" id="updateNotification">Canales actualizados correctamente</div>
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
+    
+    <div class="search-filters">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar canales, número (ej: #123) o hora (ej: 15:30)">
+      </div>
+      
+      <div class="filter-buttons">
+        <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
+        <button class="filter-button filter-button--active" id="filterAll">Todos</button>
+        <button class="filter-button" id="filterLive">Directo</button>
+        <button class="filter-button filter-button--clear" id="clearEmojiFilters">x</button>
+      </div>
+      
+      <div class="emoji-filters" id="emojiFilters">
+        <button class="emoji-filter-btn" data-filter="TV Shows" title="TV Shows">📺</button>
+        <button class="emoji-filter-btn" data-filter="Fútbol" title="Fútbol">⚽</button>
+        <button class="emoji-filter-btn" data-filter="Baloncesto" title="Baloncesto">🏀</button>
+        <button class="emoji-filter-btn" data-filter="Tenis" title="Tenis">🎾</button>
+        <button class="emoji-filter-btn" data-filter="MMA" title="MMA">👊</button>
+        <button class="emoji-filter-btn" data-filter="Boxeo" title="Boxeo">🥊</button>
+        <button class="emoji-filter-btn" data-filter="Motorsport" title="Motorsport">🏁</button>
+        <button class="emoji-filter-btn" data-filter="Formula 1" title="Formula 1">🏎️</button>
+        <button class="emoji-filter-btn" data-filter="Spain ES Movistar M+" title="España">🇪🇸</button>
+      </div>
     </div>
+    
+    <div class="channels-grid" id="results">Cargando canales...</div>
+  </div>
 
-    <!-- Botón de ajustes flotante (oculto) -->
-    <div class="settings-button" id="settingsButton">⚙️</div>
-    <div class="settings-modal" id="settingsModal">
-        <button class="settings-close" id="settingsClose">×</button>
-        <h3 class="settings-title">Ajustes</h3>
-        <div class="settings-group">
-            <div class="settings-group-title">Modos de visualización</div>
-            <div class="settings-item">
-                <span class="settings-label">Modo oscuro (&D)</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="darkModeToggle">
-                    <span class="settings-slider"></span>
-                </label>
+  <script>
+    const state = {
+      channels: [],
+      currentFilter: 'all',
+      searchTerm: '',
+      activeEmojiFilters: [],
+      favorites: JSON.parse(localStorage.getItem('favorites')) || [],
+      currentChannel: null,
+      baseDomain: 'daddylivehd1.my'
+    };
+
+    function playChannel(channel) {
+      state.currentChannel = channel;
+      document.getElementById('playerContainer').classList.add('player-container--active');
+      document.getElementById('playerControls').classList.add('player-controls--active');
+      document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
+    }
+
+    function closePlayer() {
+      document.getElementById('playerContainer').classList.remove('player-container--active');
+      document.getElementById('playerControls').classList.remove('player-controls--active');
+      document.getElementById('videoFrame').src = '';
+      state.currentChannel = null;
+    }
+
+    function navigateChannel(direction) {
+      if (!state.currentChannel) return;
+      const currentNumber = parseInt(state.currentChannel.number);
+      const newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
+      const nextChannel = state.channels.find(c => c.number === newNumber.toString());
+      if (nextChannel) playChannel(nextChannel);
+    }
+
+    function applyFilter(filter) {
+      state.currentFilter = filter;
+      document.getElementById('filterAll').classList.remove('filter-button--active');
+      document.getElementById('filterLive').classList.remove('filter-button--active');
+      document.getElementById('filterFavorites').classList.remove('filter-button--active');
+      document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('filter-button--active');
+      renderResults();
+    }
+
+    function toggleEmojiFilter(filter, button) {
+      button.classList.toggle('emoji-filter-btn--active');
+      const index = state.activeEmojiFilters.indexOf(filter);
+      if (index === -1) state.activeEmojiFilters.push(filter);
+      else state.activeEmojiFilters.splice(index, 1);
+      renderResults();
+    }
+
+    function clearEmojiFilters() {
+      state.activeEmojiFilters = [];
+      document.querySelectorAll('.emoji-filter-btn').forEach(btn => btn.classList.remove('emoji-filter-btn--active'));
+      renderResults();
+    }
+
+    function toggleFavorite(channelNumber) {
+      const index = state.favorites.indexOf(channelNumber);
+      if (index === -1) state.favorites.push(channelNumber);
+      else state.favorites.splice(index, 1);
+      localStorage.setItem('favorites', JSON.stringify(state.favorites));
+      renderResults();
+    }
+
+    function filterChannels() {
+      return state.channels.filter(channel => {
+        if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
+        if (state.currentFilter === 'live' && !channel.time.includes('LIVE')) return false;
+        
+        if (state.searchTerm) {
+          const term = state.searchTerm.toLowerCase();
+          if (/^#?\d+$/.test(term)) {
+            const channelNumber = term.replace('#', '');
+            if (channel.number !== channelNumber) return false;
+          } else if (!channel.name.toLowerCase().includes(term) && 
+                     !channel.event.toLowerCase().includes(term) && 
+                     !channel.sport.toLowerCase().includes(term)) {
+            return false;
+          }
+        }
+        
+        if (state.activeEmojiFilters.length > 0) {
+          const matchesFilter = state.activeEmojiFilters.some(filter => {
+            if (filter === "Tenis") return channel.sport.includes("Tenis") || channel.sport.includes("Tennis");
+            if (filter === "Spain ES Movistar M+") {
+              return channel.name.includes('Spain') || channel.name.includes(' ES ') || 
+                     channel.name.includes('Movistar') || channel.name.includes('M+');
+            }
+            return channel.sport.includes(filter);
+          });
+          if (!matchesFilter) return false;
+        }
+        
+        return true;
+      });
+    }
+
+    function renderResults() {
+      const filteredChannels = filterChannels();
+      const resultsDiv = document.getElementById('results');
+      
+      if (filteredChannels.length === 0) {
+        resultsDiv.innerHTML = '<p>No se encontraron canales</p>';
+        return;
+      }
+      
+      resultsDiv.innerHTML = filteredChannels.map(channel => {
+        const isFavorite = state.favorites.includes(channel.number);
+        const isLive = channel.time.includes('LIVE');
+        return `
+          <div class="channel-card" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
+            <div class="channel-header">
+              <div class="channel-time ${isLive ? 'channel-time--live' : ''}">${channel.time}</div>
+              <div class="channel-name">${isFavorite ? '★ ' : ''}${channel.name}</div>
+              <div class="channel-number">${channel.number}</div>
             </div>
-            <div class="settings-item">
-                <span class="settings-label">Pantalla completa (&F)</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="fullscreenToggle">
-                    <span class="settings-slider"></span>
-                </label>
-            </div>
-            <div class="settings-item">
-                <span class="settings-label">Agrupar canales (&G)</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="groupModeToggle">
-                    <span class="settings-slider"></span>
-                </label>
-            </div>
-            <div class="settings-item">
-                <span class="settings-label">Reproductor fijo</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="stickyPlayerToggle">
-                    <span class="settings-slider"></span>
-                </label>
-            </div>
-        </div>
-        <div class="settings-group">
-            <div class="settings-group-title">Opciones de canales</div>
-            <div class="settings-item">
-                <span class="settings-label">Modo premium (&P)</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="premiumModeToggle">
-                    <span class="settings-slider"></span>
-                </label>
-            </div>
-            <div class="settings-item">
-                <span class="settings-label">Modo offline (&X)</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="offlineModeToggle">
-                    <span class="settings-slider"></span>
-                </label>
-            </div>
-            <div class="settings-item">
-                <span class="settings-label">Filtrar canales internacionales (&I)</span>
-                <label class="settings-switch">
-                    <input type="checkbox" id="internationalFilterToggle">
-                    <span class="settings-slider"></span>
-                </label>
-            </div>
-        </div>
-    </div>
+            <div class="channel-event">${channel.event}</div>
+            <div class="channel-sport">${channel.sport}</div>
+          </div>
+        `;
+      }).join('');
+    }
 
-    <script>
-        class TVApp {
-            constructor() {
-                this.state = {
-                    channels: [],
-                    currentStream: null,
-                    isDarkMode: localStorage.getItem('darkMode') === 'true',
-                    currentFilter: localStorage.getItem('currentFilter') || 'all',
-                    playerVisible: false,
-                    healthCheckInterval: null,
-                    isLoading: false,
-                    longPressTimer: null,
-                    premiumServers: [
-                        'https://dokko1new.newkso.ru/dokko1/',
-                        'https://zekonew.newkso.ru/zeko/',
-                        'https://wikinew.newkso.ru/wiki/',
-                        'https://ddy6new.newkso.ru/ddy6/',
-                        'https://azonew.newkso.ru/azo/',
-                        'https://windnew.newkso.ru/wind/',
-                        'https://hztnew.newkso.ru/hzt/',
-                        'https://nfsnew.newkso.ru/nfs/'
-                    ],
-                    premiumLinks: {},
-                    usePremium: localStorage.getItem('usePremium') === 'true',
-                    stickyPlayer: localStorage.getItem('stickyPlayer') === 'true',
-                    fullscreen: localStorage.getItem('fullscreen') === 'true',
-                    baseDomain: localStorage.getItem('baseDomain') || 'daddylivehd1.my',
-                    tripleClickTimer: null,
-                    clickCount: 0,
-                    searchIndex: null,
-                    activeEmojiFilters: JSON.parse(localStorage.getItem('activeEmojiFilters')) || [],
-                    searchTerm: localStorage.getItem('searchTerm') || '',
-                    isGrouped: localStorage.getItem('isGrouped') === 'true',
-                    channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || [],
-                    offlineMode: localStorage.getItem('offlineMode') === 'true',
-                    clearButtonClickCount: 0,
-                    lastClearButtonClickTime: 0,
-                    internationalFilter: localStorage.getItem('internationalFilter') === 'true',
-                    filteredKeywords: [
-                        "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", "Bulgaria", "NZ", "BR", "Morocco", "Hungary", 
-                        "Tennis", "DE", "NL", "Poland", "Malaysia", "Serbia", "Cyprus", "Croatia", 
-                        "Israel", "Football", "SE", "Italy", "Greece", "Brazil", "Portugal", 
-                        "Czech", "MLB", "Denmark", "MENA", "Romania", "Disney", "NICK JR", "Turkey"
-                    ]
-                };
-                this.activeEmojiFilters = [...this.state.activeEmojiFilters];
-                
-                const savedChannels = localStorage.getItem('daddyliveChannels');
-                if (savedChannels) {
-                    try {
-                        this.state.channels = JSON.parse(savedChannels);
-                        console.log('Canales cargados desde localStorage:', this.state.channels.length);
-                    } catch (e) {
-                        console.error('Error al parsear canales:', e);
-                        this.state.channels = [];
-                    }
-                }
-                
-                this.initializeDOM();
-                this.setupEventDelegation();
-                this.setupIntersectionObserver();
-                this.debouncedRender = this.debounce(this.renderChannels.bind(this), 300);
-                this.debouncedSearch = this.debounce(this.handleSearchCommand.bind(this), 300);
-                this.setupExternalPlayerButtons();
-                this.restoreFilterState();
-                this.setupSettingsModal();
-                
-                this.loadChannels();
-                this.loadPremiumLinks();
+    async function scrape() {
+      try {
+        const proxy = 'https://corsproxy.io/?';
+        const url = proxy + encodeURIComponent(`https://${state.baseDomain}/`);
+        const res = await fetch(url);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
 
-                if (this.state.offlineMode) {
-                    this.toggleOfflineMode(false);
-                }
-            }
+        state.channels = [];
+        let currentSport = '';
 
-            initializeDOM() {
-                this.elements = {
-                    playerContainer: document.getElementById('playerContainer'),
-                    videoPlayer: document.getElementById('videoPlayer'),
-                    channelsGrid: document.getElementById('channelsGrid'),
-                    searchInput: document.getElementById('searchInput'),
-                    filterAll: document.getElementById('filterAll'),
-                    filterLive: document.getElementById('filterLive'),
-                    filterFavorites: document.getElementById('filterFavorites'),
-                    clearEmojiFilters: document.getElementById('clearEmojiFilters'),
-                    prevChannelBtn: document.getElementById('prevChannelBtn'),
-                    nextChannelBtn: document.getElementById('nextChannelBtn'),
-                    favoriteBtn: document.getElementById('favoriteBtn'),
-                    closePlayerBtn: document.getElementById('closePlayerBtn'),
-                    loading: document.getElementById('loading'),
-                    statusBadge: document.getElementById('statusBadge'),
-                    channelCount: document.getElementById('channelCount'),
-                    channelListModal: document.getElementById('channelListModal'),
-                    channelListContent: document.getElementById('channelListContent'),
-                    channelListSearch: document.getElementById('channelListSearch'),
-                    closeChannelListBtn: document.getElementById('closeChannelListBtn'),
-                    favoriteModal: document.getElementById('favoriteModal'),
-                    favoriteNameInput: document.getElementById('favoriteNameInput'),
-                    saveFavoriteBtn: document.getElementById('saveFavoriteBtn'),
-                    cancelFavoriteBtn: document.getElementById('cancelFavoriteBtn'),
-                    updateNotification: document.getElementById('updateNotification'),
-                    toggleStickyBtn: document.getElementById('toggleStickyBtn'),
-                    channelInfo: document.getElementById('channelInfo'),
-                    channelNumberDisplay: document.getElementById('channelNumberDisplay'),
-                    playerSection: document.getElementById('playerSection'),
-                    playerControls: document.getElementById('playerControls'),
-                    emojiFilters: document.getElementById('emojiFilters'),
-                    offlineIndicator: document.getElementById('offlineIndicator'),
-                    lsButton: document.getElementById('lsButton'),
-                    shButton: document.getElementById('shButton'),
-                    wrButton: document.getElementById('wrButton'),
-                    stButton: document.getElementById('stButton'),
-                    settingsButton: document.getElementById('settingsButton'),
-                    settingsModal: document.getElementById('settingsModal'),
-                    settingsClose: document.getElementById('settingsClose'),
-                    darkModeToggle: document.getElementById('darkModeToggle'),
-                    fullscreenToggle: document.getElementById('fullscreenToggle'),
-                    groupModeToggle: document.getElementById('groupModeToggle'),
-                    stickyPlayerToggle: document.getElementById('stickyPlayerToggle'),
-                    premiumModeToggle: document.getElementById('premiumModeToggle'),
-                    offlineModeToggle: document.getElementById('offlineModeToggle'),
-                    internationalFilterToggle: document.getElementById('internationalFilterToggle')
-                };
+        const headings = Array.from(doc.querySelectorAll('h2, p'));
+        for (const el of headings) {
+          if (el.tagName === 'H2') {
+            currentSport = el.textContent.trim();
+            continue;
+          }
 
-                if (this.state.isDarkMode) {
-                    document.body.classList.add('dark-mode');
-                    this.elements.darkModeToggle.checked = true;
-                }
+          if (el.tagName === 'P') {
+            const strongs = el.querySelectorAll('strong');
+            strongs.forEach(strong => {
+              const text = strong.childNodes[0]?.textContent?.trim();
+              const timeMatch = text?.match(/^(\d{1,2}:\d{2})\s+(.+?)$/);
+              const links = strong.querySelectorAll('a');
 
-                this.toggleStickyPlayer(this.state.stickyPlayer);
-                this.elements.toggleStickyBtn.innerHTML = this.state.stickyPlayer ? '⛉' : '⛊';
-                this.elements.toggleStickyBtn.title = this.state.stickyPlayer ? "Liberar reproductor" : "Fijar reproductor";
-                this.elements.stickyPlayerToggle.checked = this.state.stickyPlayer;
+              if (timeMatch && links.length) {
+                const time = timeMatch[1];
+                const event = timeMatch[2];
 
-                if (this.state.fullscreen) {
-                    document.documentElement.requestFullscreen();
-                    this.state.fullscreen = true;
-                }
+                links.forEach(link => {
+                  const nameRaw = link.textContent.trim();
+                  const numberMatch = nameRaw.match(/\(CH-(\d+)\)/);
+                  const number = numberMatch ? numberMatch[1] : '';
+                  const name = nameRaw.replace(/\s*\(CH-\d+\)/, '');
+                  const url = new URL(link.getAttribute('href'), `https://${state.baseDomain}`).href;
 
-                this.elements.offlineIndicator.style.display = this.state.offlineMode ? 'block' : 'none';
-                this.elements.offlineModeToggle.checked = this.state.offlineMode;
-                this.elements.premiumModeToggle.checked = this.state.usePremium;
-                this.elements.groupModeToggle.checked = this.state.isGrouped;
-                this.elements.internationalFilterToggle.checked = this.state.internationalFilter;
-            }
+                  const domainMatch = link.href.match(/https?:\/\/(daddylivehd[^\/]+)/i);
+                  if (domainMatch && domainMatch[1]) {
+                    state.baseDomain = domainMatch[1];
+                  }
 
-            setupSettingsModal() {
-                this.elements.settingsClose.addEventListener('click', () => {
-                    this.elements.settingsModal.classList.remove('settings-modal--active');
-                });
-
-                this.elements.darkModeToggle.addEventListener('change', () => {
-                    this.toggleDarkMode();
-                });
-
-                this.elements.fullscreenToggle.addEventListener('change', () => {
-                    this.toggleFullscreen();
-                });
-
-                this.elements.groupModeToggle.addEventListener('change', () => {
-                    this.toggleGroupMode();
-                });
-
-                this.elements.stickyPlayerToggle.addEventListener('change', () => {
-                    this.toggleStickyMode();
-                });
-
-                this.elements.premiumModeToggle.addEventListener('change', () => {
-                    this.togglePremiumMode();
-                });
-
-                this.elements.offlineModeToggle.addEventListener('change', () => {
-                    this.toggleOfflineMode();
-                });
-
-                this.elements.internationalFilterToggle.addEventListener('change', () => {
-                    this.toggleInternationalFilter();
-                });
-            }
-
-            toggleInternationalFilter() {
-                this.state.internationalFilter = !this.state.internationalFilter;
-                localStorage.setItem('internationalFilter', this.state.internationalFilter);
-                this.elements.internationalFilterToggle.checked = this.state.internationalFilter;
-                this.renderChannels();
-                const message = this.state.internationalFilter ? 
-                    'Filtro de canales internacionales activado' : 
-                    'Filtro de canales internacionales desactivado';
-                this.showNotification(message);
-            }
-
-            setupIntersectionObserver() {
-                this.intersectionObserver = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const img = entry.target.querySelector('img');
-                            if (img && img.dataset.src) {
-                                img.src = img.dataset.src;
-                            }
-                        }
-                    });
-                }, { threshold: 0.1 });
-            }
-
-            setupEventDelegation() {
-                document.body.addEventListener('click', (e) => {
-                    if (e.target.closest('.channel-card')) {
-                        const channelCard = e.target.closest('.channel-card');
-                        const channelId = channelCard.dataset.id;
-                        const channel = this.state.offlineMode ? 
-                            this.getOfflineChannel(channelId) : 
-                            this.state.channels.find(c => c.number === channelId);
-                        if (channel) this.playChannel(channel);
-                    }
-
-                    if (e.target.closest('.filter-button')) {
-                        const filter = e.target.closest('.filter-button').id.replace('filter', '').toLowerCase();
-                        this.applyFilter(filter);
-                    }
-
-                    if (e.target.closest('.emoji-filter-btn')) {
-                        const emojiBtn = e.target.closest('.emoji-filter-btn');
-                        const filter = emojiBtn.dataset.filter;
-                        this.toggleEmojiFilter(filter, emojiBtn);
-                    }
-
-                    if (e.target.id === 'clearEmojiFilters') {
-                        const now = Date.now();
-                        if (now - this.state.lastClearButtonClickTime > 1000) {
-                            this.state.clearButtonClickCount = 0;
-                        }
-                        this.state.clearButtonClickCount++;
-                        this.state.lastClearButtonClickTime = now;
-
-                        if (this.state.clearButtonClickCount >= 3) {
-                            this.elements.settingsModal.classList.toggle('settings-modal--active');
-                            this.state.clearButtonClickCount = 0;
-                        } else {
-                            this.clearEmojiFilters();
-                        }
-                    }
-
-                    if (e.target.closest('.channel-list-item')) {
-                        const channelItem = e.target.closest('.channel-list-item');
-                        const channelId = channelItem.querySelector('span').textContent;
-                        const channel = this.state.offlineMode ? 
-                            this.getOfflineChannel(channelId) : 
-                            this.state.channels.find(c => c.number === channelId);
-                        if (channel) this.playChannel(channel);
-                        this.hideChannelList();
-                    }
-
-                    if (e.target.id === 'closePlayerBtn') {
-                        this.closePlayer();
-                    }
-
-                    if (e.target.id === 'prevChannelBtn') {
-                        this.navigateChannel('prev');
-                    }
-
-                    if (e.target.id === 'nextChannelBtn') {
-                        this.navigateChannel('next');
-                    }
-
-                    if (e.target.id === 'toggleStickyBtn') {
-                        this.toggleStickyMode();
-                    }
-
-                    if (e.target.id === 'favoriteBtn') {
-                        this.handleFavoriteClick();
-                    }
-
-                    if (e.target.id === 'closeChannelListBtn') {
-                        this.hideChannelList();
-                    }
-
-                    if (e.target.id === 'saveFavoriteBtn') {
-                        this.saveFavorite();
-                    }
-
-                    if (e.target.id === 'cancelFavoriteBtn') {
-                        this.hideFavoriteModal();
-                    }
-                });
-
-                this.elements.searchInput.addEventListener('input', () => {
-                    this.state.searchTerm = this.elements.searchInput.value.trim();
-                    localStorage.setItem('searchTerm', this.state.searchTerm);
-                    this.debouncedRender();
-                });
-
-                this.elements.searchInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        this.debouncedSearch();
-                    }
-                });
-
-                this.elements.channelListSearch.addEventListener('input', this.debouncedRender);
-
-                this.elements.favoriteBtn.addEventListener('touchstart', () => this.startLongPress());
-                this.elements.favoriteBtn.addEventListener('touchend', () => this.clearLongPress());
-                this.elements.favoriteBtn.addEventListener('touchcancel', () => this.clearLongPress());
-
-                document.addEventListener('fullscreenchange', () => {
-                    this.state.fullscreen = !!document.fullscreenElement;
-                    localStorage.setItem('fullscreen', this.state.fullscreen);
-                    this.elements.fullscreenToggle.checked = this.state.fullscreen;
-                });
-
-                window.addEventListener('scroll', this.debounce(() => {}, 100));
-            }
-
-            getOfflineChannel(channelNumber) {
-                const history = this.state.channelHistory[channelNumber];
-                if (!history) return null;
-                
-                return {
-                    number: channelNumber,
-                    name: history.names[0],
-                    isFavorite: history.isFavorite,
-                    url: `https://${this.state.baseDomain}/embed/stream-${channelNumber}.php`,
-                    metadata: {
-                        time: '',
-                        event: '',
-                        sport: 'General',
-                        rawText: history.names[0]
-                    }
-                };
-            }
-
-            toggleOfflineMode(showNotification = true) {
-                this.state.offlineMode = !this.state.offlineMode;
-                localStorage.setItem('offlineMode', this.state.offlineMode);
-                this.elements.offlineModeToggle.checked = this.state.offlineMode;
-                
-                this.elements.offlineIndicator.style.display = this.state.offlineMode ? 'block' : 'none';
-                
-                if (this.state.offlineMode) {
-                    this.showOfflineMode(showNotification);
-                    this.updateSystemStatus('offline');
-                } else {
-                    this.loadChannels();
-                    this.loadPremiumLinks();
-                }
-            }
-
-            showOfflineMode(showNotification = true) {
-                this.updateSystemStatus('offline');
-                
-                const offlineChannels = Object.entries(this.state.channelHistory).map(([number, data]) => ({
+                  state.channels.push({
                     number,
-                    name: data.names[0],
-                    isFavorite: data.isFavorite,
-                    url: `https://${this.state.baseDomain}/embed/stream-${number}.php`,
-                    metadata: {
-                        time: '',
-                        event: '',
-                        sport: 'General',
-                        rawText: data.names[0]
-                    }
-                }));
-                
-                offlineChannels.sort((a, b) => parseInt(a.number) - parseInt(b.number));
-                
-                this.elements.channelsGrid.innerHTML = '';
-                const fragment = document.createDocumentFragment();
-                
-                offlineChannels.forEach(channel => {
-                    const channelCard = this.createChannelCard(channel);
-                    fragment.appendChild(channelCard);
+                    name,
+                    url,
+                    time,
+                    event,
+                    sport: currentSport
+                  });
                 });
-                
-                this.elements.channelsGrid.appendChild(fragment);
-                this.updateChannelCount();
-                
-                if (showNotification) {
-                    this.showNotification('Modo Offline activado. Mostrando canales del historial.');
-                }
-            }
-
-            toggleEmojiFilter(filter, button) {
-                button.classList.toggle('emoji-filter-btn--active');
-                
-                if (button.classList.contains('emoji-filter-btn--active')) {
-                    if (!this.activeEmojiFilters.includes(filter)) {
-                        this.activeEmojiFilters.push(filter);
-                    }
-                } else {
-                    this.activeEmojiFilters = this.activeEmojiFilters.filter(f => f !== filter);
-                }
-                
-                this.state.activeEmojiFilters = [...this.activeEmojiFilters];
-                localStorage.setItem('activeEmojiFilters', JSON.stringify(this.activeEmojiFilters));
-                
-                this.elements.channelsGrid.innerHTML = '';
-                this.prepareFilterIndexes();
-                this.renderChannels(true);
-            }
-
-            clearEmojiFilters() {
-                document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
-                    btn.classList.remove('emoji-filter-btn--active');
-                });
-                
-                this.activeEmojiFilters = [];
-                this.state.activeEmojiFilters = [];
-                localStorage.removeItem('activeEmojiFilters');
-                
-                this.elements.channelsGrid.innerHTML = '';
-                this.prepareFilterIndexes();
-                this.renderChannels(true);
-            }
-
-            async loadChannels() {
-                this.state.isLoading = true;
-                this.updateSystemStatus('loading');
-                try {
-                    const targetUrl = `https://${this.state.baseDomain}/`;
-                    const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Error en la conexión');
-                    const data = await response.text();
-                    
-                    if (data) {
-                        const newChannels = this.extractChannels(data);
-                        if (newChannels.length > 0) {
-                            this.updateChannelHistory(newChannels);
-                            
-                            const savedChannels = JSON.parse(localStorage.getItem('daddyliveChannels')) || [];
-                            const mergedChannels = newChannels.map(newChannel => {
-                                const savedChannel = savedChannels.find(sc => sc.number === newChannel.number);
-                                if (savedChannel) {
-                                    return {
-                                        ...newChannel,
-                                        name: savedChannel.name,
-                                        isFavorite: savedChannel.isFavorite,
-                                        lastUpdated: savedChannel.lastUpdated || new Date().toISOString(),
-                                        isCustom: savedChannel.isCustom || false
-                                    };
-                                }
-                                return newChannel;
-                            });
-                            
-                            const customFavorites = savedChannels
-                                .filter(sc => 
-                                    sc.isFavorite && 
-                                    !newChannels.some(nc => nc.number === sc.number)
-                                )
-                                .map(fav => ({
-                                    ...fav,
-                                    metadata: {
-                                        ...fav.metadata,
-                                        event: '',
-                                        time: '',
-                                        sport: fav.metadata?.sport || 'General'
-                                    }
-                                }));
-                            
-                            this.state.channels = [...mergedChannels, ...customFavorites];
-                            localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-                            
-                            this.renderChannels();
-                            this.updateSystemStatus('healthy');
-                            this.updateChannelCount();
-                            const currentDate = this.extractCurrentDate(data);
-                            this.showNotification(`Canales actualizados (${currentDate})`, 3000);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error al actualizar canales:', error);
-                    if (this.state.channels.length === 0) {
-                        this.updateSystemStatus('unstable');
-                        this.loadBackupChannels();
-                    }
-                } finally {
-                    this.state.isLoading = false;
-                }
-            }
-
-            updateChannelHistory(newChannels) {
-                const history = { ...this.state.channelHistory };
-                let hasUpdates = false;
-
-                newChannels.forEach(channel => {
-                    if (!history[channel.number]) {
-                        history[channel.number] = {
-                            names: [channel.name],
-                            isFavorite: false
-                        };
-                        hasUpdates = true;
-                    } else if (!history[channel.number].names.includes(channel.name)) {
-                        history[channel.number].names.push(channel.name);
-                        hasUpdates = true;
-                    }
-                });
-
-                if (hasUpdates) {
-                    this.state.channelHistory = history;
-                    localStorage.setItem('channelHistory', JSON.stringify(history));
-                }
-            }
-
-            extractChannels(htmlContent) {
-                try {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(htmlContent, 'text/html');
-                    const channels = [];
-                    const timeRegex = /(\d{2}:\d{2})/;
-                    const uniqueChannels = new Set();
-                    let domainExtracted = false;
-                    let validLinkChannels = 0;
-                    let currentSport = 'General';
-
-                    const sportTranslations = {
-                        'Football': 'Fútbol',
-                        'Soccer': 'Fútbol',
-                        'Basketball': 'Baloncesto',
-                        'Tennis': 'Tenis',
-                        'Baseball': 'Béisbol',
-                        'Boxing': 'Boxeo',
-                        'Handball': 'Balonmano',
-                        'Cycling': 'Ciclismo',
-                        'Swimming': 'Natación',
-                        'Athletics': 'Atletismo',
-                        'Darts': 'Dardos',
-                    };
-
-                    const elements = doc.querySelectorAll('strong, h2');
-                    elements.forEach(element => {
-                        if (element.tagName === 'H2') {
-                            const originalSport = element.textContent.trim();
-                            currentSport = sportTranslations[originalSport] || originalSport;
-                            return;
-                        }
-
-                        let eventText = element.childNodes[0]?.textContent.trim() || '';
-                        const timeMatch = eventText.match(timeRegex);
-                        let adjustedTime = '';
-
-                        if (timeMatch) {
-                            const [hours, minutes] = timeMatch[1].split(':').map(Number);
-                            const adjustedHours = (hours + 1) % 24;
-                            adjustedTime = `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-                            eventText = eventText.replace(timeMatch[1], adjustedTime);
-                        }
-
-                        const links = element.querySelectorAll('a');
-                        links.forEach(link => {
-                            const linkText = link.textContent.trim();
-                            const channelMatch = linkText.match(/(.+?)\s*\(CH-(\d+)\)/i);
-                            if (channelMatch) {
-                                const channelName = channelMatch[1].trim();
-                                const channelNumber = channelMatch[2];
-                                const channelKey = `${channelNumber}|${channelName}|${adjustedTime}|${eventText.replace(timeRegex, '').trim()}`;
-
-                                if (!uniqueChannels.has(channelKey)) {
-                                    uniqueChannels.add(channelKey);
-                                    
-                                    if (!domainExtracted && link.href) {
-                                        const domainMatch = link.href.match(/https?:\/\/(daddylivehd[^\/]+)/i);
-                                        if (domainMatch && domainMatch[1]) {
-                                            this.state.baseDomain = domainMatch[1];
-                                            localStorage.setItem('baseDomain', this.state.baseDomain);
-                                            domainExtracted = true;
-                                        }
-                                    }
-
-                                    channels.push({
-                                        number: channelNumber,
-                                        name: channelName,
-                                        isFavorite: false,
-                                        url: link.href,
-                                        metadata: {
-                                            time: adjustedTime || '',
-                                            event: eventText.replace(timeRegex, '').trim(),
-                                            sport: currentSport,
-                                            rawText: `${channelName} (CH-${channelNumber})`
-                                        }
-                                    });
-                                    validLinkChannels++;
-                                }
-                            }
-                        });
-                    });
-
-                    this.prepareFilterIndexes();
-                    return channels;
-                } catch (error) {
-                    console.error('Error al extraer canales:', error);
-                    return [];
-                }
-            }
-
-            extractCurrentDate(htmlContent) {
-                try {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(htmlContent, 'text/html');
-                    const dateElement = doc.querySelector('h2[style*="background-color: #ff0000"]');
-                    if (dateElement) {
-                        const dateText = dateElement.textContent.split('–')[0].trim();
-                        return dateText || 'Fecha no disponible';
-                    }
-                    return 'Fecha no disponible';
-                } catch (error) {
-                    console.error('Error al extraer la fecha:', error);
-                    return 'Fecha no disponible';
-                }
-            }
-
-            loadBackupChannels() {
-                const backupChannels = JSON.parse(localStorage.getItem('daddyliveChannels')) || [];
-                if (backupChannels.length > 0) {
-                    this.state.channels = backupChannels;
-                    this.prepareFilterIndexes();
-                    this.renderChannels();
-                    this.updateSystemStatus('healthy');
-                    this.updateChannelCount();
-                    this.showNotification('Mostrando copia de seguridad. Actualizando...', 3000);
-                } else {
-                    this.updateSystemStatus('unstable');
-                    this.elements.channelsGrid.innerHTML = '<p class="no-results">No se pudieron cargar los canales</p>';
-                }
-            }
-
-            async loadPremiumLinks() {
-                this.state.premiumLinks = {};
-                for (const server of this.state.premiumServers) {
-                    try {
-                        const response = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(server)}`);
-                        if (!response.ok) continue;
-                        const data = await response.text();
-                        if (!data) continue;
-
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(data, 'text/html');
-                        const links = doc.querySelectorAll('a[href*="premium"]');
-                        const serverLinks = {};
-
-                        links.forEach(link => {
-                            const href = link.getAttribute('href');
-                            const text = link.textContent.trim();
-                            const channelNumMatch = href.match(/premium(\d+)/i);
-                            const channelNameMatch = text.match(/^([A-Za-z0-9]+)/i);
-
-                            if (href && (channelNumMatch || channelNameMatch)) {
-                                const channelId = channelNumMatch ? channelNumMatch[1] : channelNameMatch[1].toLowerCase().replace(/\s+/g, '');
-                                serverLinks[channelId] = href.startsWith('http') ? href : server + href;
-                            }
-                        });
-
-                        this.state.premiumLinks[server] = serverLinks;
-                    } catch (error) {
-                        console.error(`Error al cargar servidor ${server}:`, error);
-                    }
-                }
-            }
-
-            findPremiumUrls(channelNumber) {
-                const channel = this.state.channels.find(c => c.number === channelNumber);
-                if (!channel) return [];
-
-                const channelName = channel.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const foundUrls = [];
-                const usedServers = new Set();
-
-                for (const server in this.state.premiumLinks) {
-                    for (const [key, url] of Object.entries(this.state.premiumLinks[server])) {
-                        if (key === channelNumber || url.match(new RegExp(`/premium${channelNumber}(/|$|\\D)`, 'i'))) {
-                            if (!usedServers.has(server)) {
-                                foundUrls.push(url);
-                                usedServers.add(server);
-                                if (foundUrls.length >= 2) return foundUrls;
-                            }
-                            break;
-                        }
-                    }
-                }
-
-                if (channelName.length >= 2) {
-                    for (const server in this.state.premiumLinks) {
-                        if (usedServers.has(server)) continue;
-                        for (const [key, url] of Object.entries(this.state.premiumLinks[server])) {
-                            const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            const normalizedUrl = url.toLowerCase();
-                            if (!normalizedUrl.includes('premium') &&
-                                (normalizedUrl.includes(`/${channelName}`) ||
-                                normalizedUrl.includes(`${channelName}/`))) {
-                                foundUrls.push(url);
-                                usedServers.add(server);
-                                if (foundUrls.length >= 2) return foundUrls;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                return foundUrls;
-            }
-
-            playChannel(channel) {
-                if (this.state.hls) {
-                    this.state.hls.destroy();
-                    this.state.hls = null;
-                }
-
-                this.updatePlayHistory(channel.number);
-
-                this.state.currentStream = channel;
-                this.elements.playerContainer.classList.add('player-container--active');
-                this.elements.playerControls.classList.add('player-controls--active');
-                this.elements.channelInfo.textContent = channel.name;
-                this.elements.channelNumberDisplay.textContent = `CH-${channel.number}`;
-                this.elements.loading.classList.add('loading--active');
-
-                this.elements.favoriteBtn.classList.toggle('control-btn--active', channel.isFavorite);
-
-                if (this.state.usePremium) {
-                    const premiumUrls = this.findPremiumUrls(channel.number);
-                    if (premiumUrls.length > 0) {
-                        this.elements.loading.classList.remove('loading--active');
-                        if (premiumUrls.length === 1) {
-                            this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="${premiumUrls[0]}" allowfullscreen></iframe>`;
-                        } else {
-                            const choice = confirm(`Se encontraron 2 fuentes premium:\n\n` +
-                                `1. ${premiumUrls[0].split('/')[2]}\n` +
-                                `2. ${premiumUrls[1].split('/')[2]}\n\n` +
-                                `¿Quieres usar la primera opción? (Cancelar para usar la segunda)`);
-                            const selectedUrl = choice ? premiumUrls[0] : premiumUrls[1];
-                            this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="${selectedUrl}" allowfullscreen></iframe>`;
-                        }
-                        return;
-                    }
-                }
-
-                this.playOriginalChannel(channel);
-            }
-
-            updatePlayHistory(channelNumber) {
-                if (!this.state.channelHistory[channelNumber]) {
-                    this.state.channelHistory[channelNumber] = {
-                        names: [this.state.currentStream.name],
-                        isFavorite: false
-                    };
-                }
-                localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
-            }
-
-            playOriginalChannel(channel) {
-                this.elements.loading.classList.remove('loading--active');
-                this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="https://${this.state.baseDomain}/embed/stream-${channel.number}.php" allowfullscreen></iframe>`;
-            }
-
-            closePlayer() {
-                if (this.state.hls) {
-                    this.state.hls.destroy();
-                    this.state.hls = null;
-                }
-
-                this.elements.playerContainer.classList.remove('player-container--active');
-                this.elements.playerControls.classList.remove('player-controls--active');
-                this.elements.playerContainer.innerHTML = '<video id="videoPlayer" controls></video>';
-                this.elements.videoPlayer = document.getElementById('videoPlayer');
-                this.state.currentStream = null;
-                this.elements.channelInfo.textContent = '';
-                this.elements.channelNumberDisplay.textContent = '';
-
-                if (this.state.healthCheckInterval) {
-                    clearInterval(this.state.healthCheckInterval);
-                    this.state.healthCheckInterval = null;
-                }
-            }
-
-            getEventDuration(channel) {
-                const sport = channel.metadata?.sport?.toLowerCase() || '';
-                const event = (channel.metadata?.event?.toLowerCase() || '').replace(/[^\w\sáéíóúüñ]/gi, '');
-                const name = channel.name.toLowerCase();
-
-                if (/(fútbol|soccer|football)/.test(sport)) {
-                    if (/amistoso|friendly/.test(event)) return 115;
-                    if (/champions|europa league|libertadores/.test(event)) return 150;
-                    if (/mundial|world cup|eurocopa|copa américa/.test(event)) return 135;
-                    if (/partido|vs\.|vs |contra/.test(event)) return 105;
-                    return 120;
-
-                } else if (/(baloncesto|basketball)/.test(sport)) {
-                    if (/nba/.test(name)) return 150;
-                    if (/euroleague|eurocup/.test(name)) return 130;
-                    if (/acb|liga endesa/.test(name)) return 120;
-                    return 100;
-
-                } else if (/(béisbol|baseball)/.test(sport)) {
-                    if (/mlb|grandes ligas/.test(name)) return 210;
-                    return 180;
-
-                } else if (/(balonmano|handball)/.test(sport)) {
-                    return 90;
-
-                } else if (/(rugby)/.test(sport)) {
-                    return 120;
-
-                } else if (/(hockey|hielo)/.test(sport)) {
-                    if (/nhl/.test(name)) return 150;
-                    return 120;
-
-                } else if (/(tenis|tennis)/.test(sport)) {
-                    if (/grand slam|wimbledon|open|final/.test(event)) return 300;
-                    if (/doble|dobles|double/.test(event)) return 180;
-                    return 150;
-
-                } else if (/(golf)/.test(sport)) {
-                    if (/final|última ronda|last round/.test(event)) return 360;
-                    return 480;
-
-                } else if (/(motorsport|fórmula|formula)/.test(sport)) {
-                    if (/f1|gran premio|grand prix/.test(event)) return 180;
-                    if (/moto gp|motogp/.test(event)) return 120;
-                    if (/24h|24 horas|le mans/.test(event)) return 1440;
-                    return 240;
-
-                } else if (/(ciclismo|cycling)/.test(sport)) {
-                    if (/etapa|stage/.test(event)) return 300;
-                    if (/clásica|monumento/.test(event)) return 240;
-                    if (/contrarreloj|time trial/.test(event)) return 180;
-                    return 360;
-
-                } else if (/(boxeo|boxing)/.test(sport)) {
-                    if (/main event|combate principal/.test(event)) return 60;
-                    if (/pelea|fight|preliminar/.test(event)) return 30;
-                    return 180;
-
-                } else if (/(mma|ufc)/.test(sport)) {
-                    if (/main event|combate principal/.test(event)) return 75;
-                    if (/co-main|coestelar/.test(event)) return 50;
-                    if (/pelea|fight|preliminar/.test(event)) return 15;
-                    return 240;
-
-                } else if (/(esports|videojuegos)/.test(sport)) {
-                    if (/torneo|tournament/.test(event)) return 240;
-                    if (/final|championship/.test(event)) return 120;
-                    if (/partida|match|mejor de/.test(event)) return 90;
-                    return 180;
-
-                } else if (/(atletismo|athletics)/.test(sport)) {
-                    if (/maratón|marathon/.test(event)) return 480;
-                    if (/decatlón|heptatlón/.test(event)) return 360;
-                    return 120;
-
-                } else if (/(natación|swimming)/.test(sport)) {
-                    return 120;
-
-                } else if (/(tv shows|tv show)/.test(sport)) {
-                    return 60;
-
-                } else if (/(reality)/.test(sport)) {
-                    return 90;
-
-                } else if (/(documental|documentary)/.test(sport)) {
-                    return 120;
-
-                } else if (/(especial|special)/.test(sport)) {
-                    return 180;
-                }
-                
-                return 120;
-            }
-
-            filterChannels(type = 'all', searchTerm = '', emojiFilters = []) {
-                if (this.state.offlineMode) {
-                    let offlineChannels = Object.entries(this.state.channelHistory)
-                        .map(([number, data]) => ({
-                            number,
-                            name: data.names[0],
-                            isFavorite: data.isFavorite,
-                            metadata: {
-                                time: '',
-                                event: '',
-                                sport: 'General',
-                                rawText: data.names[0]
-                            }
-                        }));
-                    
-                    switch (type) {
-                        case 'favorites':
-                            offlineChannels = offlineChannels.filter(channel => channel.isFavorite);
-                            break;
-                    }
-                    
-                    if (searchTerm) {
-                        const term = searchTerm.toLowerCase();
-                        if (/^#?\d+$/.test(term)) {
-                            const channelNumber = term.replace('#', '');
-                            offlineChannels = offlineChannels.filter(channel => channel.number === channelNumber);
-                        } else {
-                            offlineChannels = offlineChannels.filter(channel => 
-                                channel.name.toLowerCase().includes(term) ||
-                                channel.number.includes(term)
-                            );
-                        }
-                    }
-                    
-                    return offlineChannels;
-                } else {
-                    let filtered = [...this.state.channels];
-                    
-                    const seenChannels = new Set();
-                    filtered = filtered.filter(channel => {
-                        const hasNoEvent = !channel.metadata?.event || channel.metadata.event.trim() === '';
-                        if (hasNoEvent) {
-                            if (seenChannels.has(channel.number)) {
-                                return false;
-                            }
-                            seenChannels.add(channel.number);
-                        }
-                        return true;
-                    });
-
-                    // Aplicar filtro de canales internacionales si está activado
-                    if (this.state.internationalFilter) {
-                        filtered = filtered.filter(channel => {
-                            const channelName = channel.name;
-                            return !this.state.filteredKeywords.some(keyword => {
-                                // Busca la palabra clave exacta (case-sensitive) como palabra completa
-                                const regex = new RegExp(`(^|\\s|\\W)${keyword}(\\s|\\W|$)`, 'g');
-                                return regex.test(channelName);
-                            });
-                        });
-                    }
-
-                    switch (type) {
-                        case 'live':
-                            const potentialLiveChannels = filtered.filter(channel => {
-                                if (!channel.metadata?.time) return false;
-                                
-                                const [hours, minutes] = channel.metadata.time.split(':').map(Number);
-                                const eventTime = new Date();
-                                eventTime.setHours(hours, minutes, 0, 0);
-                                const diffMinutes = (new Date() - eventTime) / (1000 * 60);
-                                
-                                let maxDurationMinutes = this.getEventDuration(channel);
-                                
-                                return diffMinutes >= -15 && diffMinutes <= maxDurationMinutes;
-                            });
-                            
-                            const channelMap = new Map();
-                            potentialLiveChannels.forEach(channel => {
-                                const [hours, minutes] = channel.metadata.time.split(':').map(Number);
-                                const eventTime = new Date();
-                                eventTime.setHours(hours, minutes, 0, 0);
-                                
-                                if (!channelMap.has(channel.number)) {
-                                    channelMap.set(channel.number, channel);
-                                } else {
-                                    const existingChannel = channelMap.get(channel.number);
-                                    const [existingHours, existingMinutes] = existingChannel.metadata.time.split(':').map(Number);
-                                    const existingEventTime = new Date();
-                                    existingEventTime.setHours(existingHours, existingMinutes, 0, 0);
-                                    
-                                    if (eventTime > existingEventTime) {
-                                        channelMap.set(channel.number, channel);
-                                    }
-                                }
-                            });
-                            
-                            filtered = Array.from(channelMap.values());
-                            break;
-                            
-                        case 'favorites':
-                            filtered = filtered.filter(channel => channel.isFavorite);
-                            break;
-                    }
-
-                    if (searchTerm) {
-                        const term = searchTerm.toLowerCase();
-                        if (/^#?\d+$/.test(term)) {
-                            const channelNumber = term.replace('#', '');
-                            filtered = filtered.filter(channel => channel.number === channelNumber);
-                        } else if (/^\d{1,2}:\d{2}$/.test(term)) {
-                            filtered = filtered.filter(channel => 
-                                channel.metadata?.time && channel.metadata.time.toLowerCase().includes(term)
-                            );
-                        } else {
-                            filtered = filtered.filter(channel => 
-                                channel.name.toLowerCase().includes(term) ||
-                                (channel.metadata?.event && channel.metadata.event.toLowerCase().includes(term)) ||
-                                channel.number.includes(term) ||
-                                (channel.metadata?.sport && channel.metadata.sport.toLowerCase().includes(term))
-                            );
-                        }
-                    }
-
-                    if (emojiFilters.length > 0) {
-                        filtered = filtered.filter(channel => {
-                            return emojiFilters.some(filter => {
-                                if (filter === "Tenis") {
-                                    const tennisTerms = ["Tenis", "Tennis", "ATP", "WTA", "Grand Slam", "Wimbledon"];
-                                    return (
-                                        tennisTerms.some(term => channel.metadata?.sport?.includes(term)) ||
-                                        tennisTerms.some(term => channel.metadata?.event?.includes(term))
-                                    );
-                                }
-                                if (filter === "Spain ES Movistar M+") {
-                                    return channel.name.includes('Spain') ||
-                                        channel.name.includes(' ES ') ||
-                                        channel.name.includes('Movistar') ||
-                                        channel.name.includes('Espana') ||
-                                        channel.name.includes('M+');
-                                }
-                                return (
-                                    (channel.metadata?.sport && channel.metadata.sport.includes(filter)) ||
-                                    (channel.metadata?.event && channel.metadata.event.includes(filter)) ||
-                                    channel.name.includes(filter)
-                                );
-                            });
-                        });
-                    }
-
-                    return filtered;
-                }
-            }
-
-            applyFilter(filter) {
-                this.state.currentFilter = filter;
-                localStorage.setItem('currentFilter', filter);
-
-                this.elements.filterAll.classList.remove('filter-button--active');
-                this.elements.filterLive.classList.remove('filter-button--active');
-                this.elements.filterFavorites.classList.remove('filter-button--active');
-
-                const activeButtonMap = {
-                    'all': this.elements.filterAll,
-                    'live': this.elements.filterLive,
-                    'favorites': this.elements.filterFavorites
-                };
-                
-                if (activeButtonMap[filter]) {
-                    activeButtonMap[filter].classList.add('filter-button--active');
-                }
-
-                this.elements.channelsGrid.innerHTML = '';
-                this.prepareFilterIndexes();
-                this.renderChannels(true);
-            }
-
-            prepareFilterIndexes() {
-                if (this.state.offlineMode) {
-                    this.state.searchIndex = Object.entries(this.state.channelHistory)
-                        .map(([number, data]) => ({
-                            id: number,
-                            text: `${data.names[0]} ${number}`.toLowerCase()
-                        }));
-                } else {
-                    this.state.searchIndex = this.state.channels
-                        .map(channel => ({
-                            id: channel.number,
-                            text: `${channel.name} ${channel.number} ${channel.metadata?.event || ''} ${channel.metadata?.time || ''} ${channel.metadata?.sport || ''}`.toLowerCase()
-                        }));
-                }
-            }
-
-            renderChannels(forceClear = false) {
-                if (this.state.isLoading) return;
-                
-                if (forceClear) {
-                    this.elements.channelsGrid.innerHTML = '';
-                }
-
-                const filteredChannels = this.filterChannels(
-                    this.state.currentFilter, 
-                    this.state.searchTerm, 
-                    this.activeEmojiFilters
-                );
-
-                if (filteredChannels.length === 0) {
-                    this.elements.channelsGrid.innerHTML = `
-                        <div class="no-results-message">
-                            <p>No se encontraron canales</p>
-                            ${this.state.searchTerm || this.activeEmojiFilters.length > 0 ? 
-                                '<button id="resetFiltersBtn" class="reset-filters-btn">Resetear filtros</button>' : ''
-                            }
-                        </div>
-                    `;
-                    
-                    if (document.getElementById('resetFiltersBtn')) {
-                        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
-                            this.state.searchTerm = '';
-                            this.elements.searchInput.value = '';
-                            this.clearEmojiFilters();
-                            this.applyFilter('all');
-                        });
-                    }
-                    return;
-                }
-
-                const fragment = document.createDocumentFragment();
-
-                if (this.state.isGrouped && !this.state.offlineMode) {
-                    this.renderGroupedChannels(filteredChannels, fragment);
-                } else {
-                    filteredChannels.forEach(channel => {
-                        const channelCard = this.createChannelCard(channel);
-                        fragment.appendChild(channelCard);
-                    });
-                }
-
-                this.elements.channelsGrid.appendChild(fragment);
-                this.updateChannelCount();
-            }
-
-            createChannelCard(channel, isGrouped = false) {
-                const card = document.createElement('div');
-                card.className = `channel-card ${channel.metadata?.time === 'LIVE' ? 'channel-card--live' : ''}`;
-                card.dataset.id = channel.number;
-                const favoriteIndicator = channel.isFavorite ? '<span style="color: gold; margin-right: 5px;">★</span>' : '';
-
-                if (isGrouped) {
-                    card.innerHTML = `
-                        <div class="channel-header">
-                            <div class="channel-time ${channel.metadata?.time ? 'channel-time--live' : ''}"></div>
-                            <h3 class="channel-name">${favoriteIndicator}${channel.name}</h3>
-                            <div class="channel-number">${channel.number}</div>
-                        </div>
-                    `;
-                } else {
-                    card.innerHTML = `
-                        <div class="channel-header">
-                            <div class="channel-time ${channel.metadata?.time ? 'channel-time--live' : ''}">${channel.metadata?.time || 'LIVE'}</div>
-                            <h3 class="channel-name">${favoriteIndicator}${channel.name}</h3>
-                            <div class="channel-number">${channel.number}</div>
-                        </div>
-                        ${this.state.offlineMode ? '' : `
-                            <p class="channel-event">${channel.metadata?.event || ''}</p>
-                            <div class="channel-sport">${channel.metadata?.sport || 'General'}</div>
-                        `}
-                    `;
-                }
-
-                return card;
-            }
-
-            renderGroupedChannels(channels, fragment) {
-                const groups = {};
-                const channelsWithEvent = channels.filter(channel => channel.metadata?.event?.trim() !== '');
-                const channelsWithoutEvent = channels.filter(channel => !channel.metadata?.event || channel.metadata.event.trim() === '');
-
-                channelsWithEvent.forEach(channel => {
-                    const groupKey = `${channel.metadata?.time || 'LIVE'}|${channel.metadata.event}`;
-                    if (!groups[groupKey]) {
-                        groups[groupKey] = [];
-                    }
-                    groups[groupKey].push(channel);
-                });
-
-                if (channelsWithoutEvent.length > 0) {
-                    const noEventGroupKey = 'NO_EVENT|Canales sin evento';
-                    groups[noEventGroupKey] = channelsWithoutEvent;
-                }
-
-                for (const groupKey in groups) {
-                    groups[groupKey].sort((a, b) => {
-                        if (a.isFavorite && !b.isFavorite) return -1;
-                        if (!a.isFavorite && b.isFavorite) return 1;
-                        return 0;
-                    });
-                }
-
-                const sortedGroups = Object.entries(groups).sort((a, b) => {
-                    if (a[0].startsWith('NO_EVENT')) return 1;
-                    if (b[0].startsWith('NO_EVENT')) return -1;
-                    if (a[0].startsWith('LIVE')) return -1;
-                    if (b[0].startsWith('LIVE')) return 1;
-                    
-                    const [timeA] = a[0].split('|');
-                    const [timeB] = b[0].split('|');
-                    const [hoursA] = timeA.split(':').map(Number);
-                    const [hoursB] = timeB.split(':').map(Number);
-                    
-                    if (hoursA < 6 && hoursB >= 6) return 1;
-                    if (hoursA >= 6 && hoursB < 6) return -1;
-                    return timeA.localeCompare(timeB);
-                });
-
-                sortedGroups.forEach(([groupKey, groupChannels]) => {
-                    const groupElement = this.createChannelGroup(groupKey, groupChannels);
-                    const groupContent = groupElement.querySelector('.channel-group__content');
-                    
-                    groupChannels.forEach(channel => {
-                        const channelCard = this.createChannelCard(channel, true);
-                        groupContent.appendChild(channelCard);
-                    });
-                    
-                    fragment.appendChild(groupElement);
-                });
-            }
-
-            createChannelGroup(groupKey, groupChannels) {
-                const [time, event] = groupKey.split('|');
-                const group = document.createElement('div');
-                group.className = 'channel-group';
-                group.dataset.key = groupKey;
-                
-                const sport = groupChannels[0]?.metadata?.sport || 'General';
-                const sportTranslations = {
-                    'Football': 'Fútbol',
-                    'Soccer': 'Fútbol',
-                    'Basketball': 'Baloncesto',
-                    'Tenis': 'Tenis',
-                    'Baseball': 'Béisbol',
-                    'Boxing': 'Boxeo',
-                    'Handball': 'Balonmano',
-                    'Cycling': 'Ciclismo',
-                    'Swimming': 'Natación',
-                    'Athletics': 'Atletismo',
-                    'Darts': 'Dardos',
-                };
-                const translatedSport = sportTranslations[sport] || sport;
-
-                group.innerHTML = `
-                    <div class="channel-group__header">
-                        <div class="channel-group__title">
-                            ${time === 'NO_EVENT' ? '' : `<span class="channel-time ${time === 'LIVE' ? 'channel-time--live' : ''}">${time || 'LIVE'}</span>`}
-                            ${event || 'Canales sin evento'}
-                        </div>
-                        <div class="channel-group__sport">${translatedSport}</div>
-                    </div>
-                    <div class="channel-group__content ${groupChannels.length === 1 ? 'channel-group__content--single' : ''}"></div>
-                `;
-
-                return group;
-            }
-
-            showChannelList() {
-                this.elements.channelListContent.innerHTML = '';
-                const channelsToShow = this.filterChannels(this.state.currentFilter);
-                const searchTerm = this.elements.channelListSearch.value.toLowerCase();
-                
-                const filteredChannels = searchTerm ?
-                    channelsToShow.filter(c => 
-                        c.name.toLowerCase().includes(searchTerm) ||
-                        c.number.includes(searchTerm) ||
-                        (c.metadata?.event && c.metadata.event.toLowerCase().includes(searchTerm)) ||
-                        (c.metadata?.time && c.metadata.time.toLowerCase().includes(searchTerm)) ||
-                        (c.metadata?.sport && c.metadata.sport.toLowerCase().includes(searchTerm))
-                    ) : channelsToShow;
-
-                let currentChannelFound = false;
-
-                filteredChannels.forEach(channel => {
-                    const channelItem = document.createElement('div');
-                    channelItem.className = `channel-list-item ${this.state.currentStream && this.state.currentStream.number === channel.number ? 'channel-list-item--active' : ''}`;
-                    channelItem.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <strong>${channel.name}</strong>
-                            <span>${channel.number}</span>
-                        </div>
-                        ${this.state.offlineMode ? '' : `
-                            <div style="font-size: 0.9rem; color: var(--text); margin-bottom: 0.2rem;">
-                                ${channel.metadata?.time || 'LIVE'} ${channel.metadata?.event || ''}
-                            </div>
-                            <div style="font-size: 0.8rem; color: var(--primary);">
-                                ${channel.metadata?.sport || 'General'}
-                            </div>
-                        `}
-                    `;
-                    channelItem.addEventListener('click', () => {
-                        this.playChannel(channel);
-                        this.hideChannelList();
-                    });
-                    this.elements.channelListContent.appendChild(channelItem);
-
-                    if (this.state.currentStream && this.state.currentStream.number === channel.number) {
-                        channelItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        currentChannelFound = true;
-                    }
-                });
-
-                if (!currentChannelFound && this.state.currentStream) {
-                    const currentChannelItem = document.createElement('div');
-                    currentChannelItem.className = 'channel-list-item channel-list-item--active';
-                    currentChannelItem.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <strong>${this.state.currentStream.name}</strong>
-                            <span>${this.state.currentStream.number}</span>
-                        </div>
-                        ${this.state.offlineMode ? '' : `
-                            <div style="font-size: 0.9rem; color: var(--text); margin-bottom: 0.2rem;">
-                                ${this.state.currentStream.metadata?.time || 'LIVE'} ${this.state.currentStream.metadata?.event || ''}
-                            </div>
-                            <div style="font-size: 0.8rem; color: var(--primary);">
-                                ${this.state.currentStream.metadata?.sport || 'General'}
-                            </div>
-                        `}
-                    `;
-                    currentChannelItem.addEventListener('click', () => {
-                        this.hideChannelList();
-                    });
-                    this.elements.channelListContent.prepend(currentChannelItem);
-                    currentChannelItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-
-                this.elements.channelListModal.classList.add('modal--active');
-            }
-
-            hideChannelList() {
-                this.elements.channelListModal.classList.remove('modal--active');
-            }
-
-            showFavoriteModal() {
-                if (!this.state.currentStream) return;
-                this.elements.favoriteNameInput.value = this.state.currentStream.name;
-                this.elements.favoriteModal.classList.add('modal--active');
-            }
-
-            hideFavoriteModal() {
-                this.elements.favoriteModal.classList.remove('modal--active');
-            }
-
-            saveFavorite() {
-                const favoriteName = this.elements.favoriteNameInput.value.trim();
-                if (!favoriteName) {
-                    alert('Por favor ingresa un nombre para el favorito');
-                    return;
-                }
-
-                if (!this.state.currentStream) return;
-
-                // Buscar y actualizar el canal en el estado
-                const channelIndex = this.state.channels.findIndex(
-                    c => c.number === this.state.currentStream.number
-                );
-
-                const favoriteChannel = {
-                    ...this.state.currentStream,
-                    name: favoriteName,
-                    isFavorite: true,
-                    lastUpdated: new Date().toISOString(),
-                    isCustom: true,
-                    metadata: {
-                        ...this.state.currentStream.metadata,
-                        event: '',
-                        time: ''
-                    }
-                };
-
-                if (channelIndex !== -1) {
-                    // Actualizar el canal existente
-                    this.state.channels[channelIndex] = favoriteChannel;
-                } else {
-                    // Añadir nuevo canal si no existe
-                    this.state.channels.push(favoriteChannel);
-                }
-
-                // Actualizar el historial
-                const channelNumber = this.state.currentStream.number;
-                if (!this.state.channelHistory[channelNumber]) {
-                    this.state.channelHistory[channelNumber] = {
-                        names: [favoriteName],
-                        isFavorite: true
-                    };
-                } else {
-                    this.state.channelHistory[channelNumber].isFavorite = true;
-                    if (!this.state.channelHistory[channelNumber].names.includes(favoriteName)) {
-                        this.state.channelHistory[channelNumber].names.push(favoriteName);
-                    }
-                }
-
-                // Guardar en localStorage
-                localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
-                localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-
-                // Actualizar la UI
-                this.elements.favoriteBtn.classList.add('control-btn--active');
-                this.state.currentStream.isFavorite = true; // Actualizar el stream actual
-                this.hideFavoriteModal();
-                this.showNotification('Favorito guardado permanentemente');
-                
-                if (this.state.currentFilter === 'favorites') {
-                    this.renderChannels();
-                }
-            }
-
-            removeFavorite(channelNumber) {
-                this.state.channels = this.state.channels.map(channel => {
-                    if (channel.number === channelNumber) {
-                        return { ...channel, isFavorite: false };
-                    }
-                    return channel;
-                });
-
-                if (this.state.channelHistory[channelNumber]) {
-                    this.state.channelHistory[channelNumber].isFavorite = false;
-                    localStorage.setItem('channelHistory', JSON.stringify(this.state.channelHistory));
-                }
-
-                localStorage.setItem('daddyliveChannels', JSON.stringify(this.state.channels));
-
-                if (this.state.currentFilter === 'favorites') {
-                    this.renderChannels();
-                }
-
-                if (this.state.currentStream && this.state.currentStream.number === channelNumber) {
-                    this.elements.favoriteBtn.classList.remove('control-btn--active');
-                }
-            }
-
-            updateSystemStatus(status) {
-                const statusMap = {
-                    'loading': { text: 'Cargando...', class: 'status-badge--warning' },
-                    'healthy': { text: 'Operativo', class: '' },
-                    'unstable': { text: 'Inestable', class: 'status-badge--warning' },
-                    'down': { text: 'Inactivo', class: 'status-badge--danger' },
-                    'offline': { text: 'Offline', class: 'status-badge--warning' }
-                };
-                this.elements.statusBadge.textContent = statusMap[status].text;
-                this.elements.statusBadge.className = 'status-badge ' + (statusMap[status].class || '');
-            }
-
-            updateChannelCount() {
-                if (this.state.offlineMode) {
-                    const count = Object.keys(this.state.channelHistory).length;
-                    this.elements.channelCount.textContent = `${count}`;
-                } else {
-                    const count = this.state.channels.length;
-                    this.elements.channelCount.textContent = `${count}`;
-                }
-            }
-
-            navigateChannel(direction) {
-                if (!this.state.currentStream) return;
-
-                const currentNumber = parseInt(this.state.currentStream.number);
-                const newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
-                
-                if (this.state.offlineMode) {
-                    const nextChannel = this.getOfflineChannel(newNumber.toString());
-                    if (nextChannel) {
-                        this.playChannel(nextChannel);
-                    } else {
-                        this.playChannel({
-                            number: newNumber.toString(),
-                            name: `Canal ${newNumber}`,
-                            isFavorite: false,
-                            url: `https://${this.state.baseDomain}/embed/stream-${newNumber}.php`,
-                            metadata: {
-                                time: '',
-                                event: '',
-                                sport: 'General',
-                                rawText: `Canal ${newNumber}`
-                            }
-                        });
-                    }
-                } else {
-                    const nextChannel = this.state.channels.find(c => c.number === newNumber.toString());
-                    if (nextChannel) {
-                        this.playChannel(nextChannel);
-                    } else {
-                        this.playChannel({
-                            number: newNumber.toString(),
-                            name: `Canal ${newNumber}`,
-                            isFavorite: false,
-                            url: `https://${this.state.baseDomain}/embed/stream-${newNumber}.php`,
-                            metadata: {
-                                time: '',
-                                event: '',
-                                sport: 'General',
-                                rawText: `Canal ${newNumber}`
-                            }
-                        });
-                    }
-                }
-            }
-
-            toggleStickyMode() {
-                this.state.stickyPlayer = !this.state.stickyPlayer;
-                localStorage.setItem('stickyPlayer', this.state.stickyPlayer);
-                this.elements.stickyPlayerToggle.checked = this.state.stickyPlayer;
-                this.toggleStickyPlayer(this.state.stickyPlayer);
-            }
-
-            toggleStickyPlayer(enable) {
-                if (enable) {
-                    this.elements.playerSection.classList.add('player-section--sticky');
-                    this.elements.toggleStickyBtn.innerHTML = '⛉';
-                    this.elements.toggleStickyBtn.title = "Liberar reproductor";
-                } else {
-                    this.elements.playerSection.classList.remove('player-section--sticky');
-                    this.elements.toggleStickyBtn.innerHTML = '⛊';
-                    this.elements.toggleStickyBtn.title = "Fijar reproductor";
-                }
-            }
-
-            togglePremiumMode() {
-                this.state.usePremium = !this.state.usePremium;
-                localStorage.setItem('usePremium', this.state.usePremium);
-                this.elements.premiumModeToggle.checked = this.state.usePremium;
-                if (this.state.currentStream) {
-                    this.playChannel(this.state.currentStream);
-                }
-                this.showNotification(this.state.usePremium ? 'Modo premium activado' : 'Modo premium desactivado');
-            }
-
-            toggleGroupMode() {
-                this.state.isGrouped = !this.state.isGrouped;
-                localStorage.setItem('isGrouped', this.state.isGrouped);
-                this.elements.groupModeToggle.checked = this.state.isGrouped;
-                this.renderChannels();
-                const message = this.state.isGrouped ? 'Modo agrupado activado' : 'Modo agrupado desactivado';
-                this.showNotification(message);
-            }
-
-            toggleDarkMode() {
-                this.state.isDarkMode = !this.state.isDarkMode;
-                document.body.classList.toggle('dark-mode', this.state.isDarkMode);
-                localStorage.setItem('darkMode', this.state.isDarkMode);
-                this.elements.darkModeToggle.checked = this.state.isDarkMode;
-            }
-
-            toggleFullscreen() {
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                    this.state.fullscreen = false;
-                } else {
-                    document.documentElement.requestFullscreen();
-                    this.state.fullscreen = true;
-                }
-                localStorage.setItem('fullscreen', this.state.fullscreen);
-                this.elements.fullscreenToggle.checked = this.state.fullscreen;
-            }
-
-            showNotification(message, duration = 2000) {
-                const notification = document.createElement('div');
-                notification.className = 'update-notification';
-                notification.textContent = message;
-                notification.style.display = 'block';
-                document.body.appendChild(notification);
-
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        notification.remove();
-                    }, 500);
-                }, duration);
-            }
-
-            handleSearchCommand() {
-                const value = this.elements.searchInput.value.trim();
-                
-                // Comandos especiales (se borran completamente)
-                if (value === '&D') {
-                    this.toggleDarkMode();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&F') {
-                    this.toggleFullscreen();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&G') {
-                    this.toggleGroupMode();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&P') {
-                    this.togglePremiumMode();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&X') {
-                    this.toggleOfflineMode();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                } else if (value === '&I') {
-                    this.toggleInternationalFilter();
-                    this.state.searchTerm = '';
-                    this.elements.searchInput.value = '';
-                    localStorage.removeItem('searchTerm');
-                    return;
-                }
-
-                // Búsqueda por número de canal (no se borra)
-                if (/^#?\d+$/.test(value)) {
-                    const channelNumber = value.replace('#', '');
-                    
-                    if (this.state.offlineMode) {
-                        const channel = this.getOfflineChannel(channelNumber);
-                        if (channel) {
-                            this.playChannel(channel);
-                        } else {
-                            this.playChannel({
-                                number: channelNumber,
-                                name: `Canal ${channelNumber}`,
-                                isFavorite: false,
-                                url: `https://${this.state.baseDomain}/embed/stream-${channelNumber}.php`,
-                                metadata: {
-                                    time: '',
-                                    event: '',
-                                    sport: 'General',
-                                    rawText: `Canal ${channelNumber}`
-                                }
-                            });
-                        }
-                    } else {
-                        const channel = this.state.channels.find(c => c.number === channelNumber);
-                        
-                        if (channel) {
-                            this.playChannel(channel);
-                        } else {
-                            this.playChannel({
-                                number: channelNumber,
-                                name: `Canal ${channelNumber}`,
-                                isFavorite: false,
-                                url: `https://${this.state.baseDomain}/embed/stream-${channelNumber}.php`,
-                                metadata: {
-                                    time: '',
-                                    event: '',
-                                    sport: 'General',
-                                    rawText: `Canal ${channelNumber}`
-                                }
-                            });
-                        }
-                    }
-                    return;
-                }
-
-                // Búsqueda por hora (no se borra)
-                if (/^\d{1,2}:\d{2}$/.test(value)) {
-                    return;
-                }
-            }
-
-            handleFavoriteClick() {
-                this.clearLongPress();
-                if (!this.state.currentStream) return;
-
-                if (this.state.currentStream.isFavorite) {
-                    if (confirm('¿Quieres eliminar este canal de favoritos?')) {
-                        this.removeFavorite(this.state.currentStream.number);
-                    }
-                } else {
-                    this.showFavoriteModal();
-                }
-            }
-
-            startLongPress() {
-                if (!this.state.currentStream) return;
-                this.state.longPressTimer = setTimeout(() => {
-                    if (this.state.currentStream.isFavorite) {
-                        if (confirm('¿Quieres eliminar este canal de favoritos?')) {
-                            this.removeFavorite(this.state.currentStream.number);
-                        }
-                    }
-                }, 1000);
-            }
-
-            clearLongPress() {
-                clearTimeout(this.state.longPressTimer);
-            }
-
-            debounce(func, wait, immediate = false) {
-                let timeout;
-                return function() {
-                    const context = this, args = arguments;
-                    const later = function() {
-                        timeout = null;
-                        if (!immediate) func.apply(context, args);
-                    };
-                    const callNow = immediate && !timeout;
-                    clearTimeout(timeout);
-                    timeout = setTimeout(later, wait);
-                    if (callNow) func.apply(context, args);
-                };
-            }
-
-            setupExternalPlayerButtons() {
-                document.getElementById('lsButton').addEventListener('click', () =>
-                    this.loadExternalUrl('https://hq.livesoccer.sx/'));
-                document.getElementById('shButton').addEventListener('click', () =>
-                    this.loadExternalUrl('https://sporthd.live/'));
-                document.getElementById('wrButton').addEventListener('click', () =>
-                    this.loadExternalUrl('https://wearechecking.online/'));
-                document.getElementById('stButton').addEventListener('click', () =>
-                    this.loadExternalUrl('https://www.streamhd.ws/'));
-            }
-
-            loadExternalUrl(url) {
-                if (this.state.hls) {
-                    this.state.hls.destroy();
-                    this.state.hls = null;
-                }
-
-                this.elements.playerContainer.classList.add('player-container--active');
-                this.elements.playerControls.classList.add('player-controls--active');
-                this.elements.channelInfo.textContent = 'Reproduciendo contenido externo';
-                this.elements.channelNumberDisplay.textContent = '';
-                this.elements.playerContainer.innerHTML = `<iframe id="videoFrame" src="${url}" allowfullscreen></iframe>`;
-            }
-
-            restoreFilterState() {
-                if (this.state.currentFilter) {
-                    this.applyFilter(this.state.currentFilter);
-                } else {
-                    this.applyFilter('all');
-                }
-                
-                if (this.state.searchTerm) {
-                    this.elements.searchInput.value = this.state.searchTerm;
-                }
-                
-                if (this.state.activeEmojiFilters && this.state.activeEmojiFilters.length > 0) {
-                    this.activeEmojiFilters = [...this.state.activeEmojiFilters];
-                    document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
-                        if (this.activeEmojiFilters.includes(btn.dataset.filter)) {
-                            btn.classList.add('emoji-filter-btn--active');
-                        }
-                    });
-                }
-            }
+              }
+            });
+          }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const app = new TVApp();
-        });
-    </script>
+        renderResults();
+      } catch (err) {
+        document.getElementById('results').innerHTML = '<p>Error al cargar datos</p>';
+        console.error('Error:', err);
+      }
+    }
+
+    document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
+    document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
+    document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
+    document.getElementById('clearEmojiFilters').addEventListener('click', clearEmojiFilters);
+    
+    document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn));
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      state.searchTerm = e.target.value.trim();
+      renderResults();
+    });
+
+    document.getElementById('prevChannelBtn').addEventListener('click', () => navigateChannel('prev'));
+    document.getElementById('nextChannelBtn').addEventListener('click', () => navigateChannel('next'));
+    document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
+
+    scrape();
+  </script>
 </body>
 </html>
