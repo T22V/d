@@ -215,6 +215,134 @@
       align-items: center;
       justify-content: center;
     }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1001;
+    }
+    .modal--active {
+      display: flex;
+    }
+    .modal__content {
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      padding: 1.2rem;
+      width: 90%;
+      max-width: 350px;
+      box-shadow: var(--shadow-sm);
+    }
+    .modal__title {
+      margin-bottom: 0.8rem;
+      color: var(--text);
+      font-size: 1.1rem;
+    }
+    .modal__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+    .modal__btn {
+      padding: 0.5rem 0.8rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    .modal__btn--primary {
+      background: var(--primary);
+      color: white;
+    }
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .settings-label {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .settings-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .settings-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .settings-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .settings-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .settings-slider {
+      background-color: var(--primary);
+    }
+    input:checked + .settings-slider:before {
+      transform: translateX(26px);
+    }
+    .channel-group {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .channel-group__header {
+      padding: 0.8rem 1rem;
+      background: rgba(37, 99, 235, 0.1);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .channel-group__title {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .channel-group__sport {
+      font-size: 0.8rem;
+      color: var(--primary);
+      margin-top: 0.2rem;
+    }
+    .channel-group__content {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.8rem;
+      padding: 0.8rem;
+    }
+    .channel-group__content--single {
+      grid-template-columns: 1fr;
+    }
     @keyframes pulse {
       0% { opacity: 1; }
       50% { opacity: 0.3; }
@@ -226,6 +354,9 @@
       }
       .filter-buttons {
         flex-wrap: nowrap;
+      }
+      .channel-group__content {
+        grid-template-columns: 1fr;
       }
     }
     @media (min-width: 768px) {
@@ -286,6 +417,29 @@
     <div class="channels-grid" id="results">Cargando canales...</div>
   </div>
 
+  <div class="modal" id="settingsModal">
+    <div class="modal__content">
+      <h3 class="modal__title">Ajustes</h3>
+      <div class="settings-item">
+        <span class="settings-label">Filtrar canales internacionales</span>
+        <label class="settings-switch">
+          <input type="checkbox" id="internationalFilterToggle">
+          <span class="settings-slider"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <span class="settings-label">Agrupar canales</span>
+        <label class="settings-switch">
+          <input type="checkbox" id="groupChannelsToggle">
+          <span class="settings-slider"></span>
+        </label>
+      </div>
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--primary" id="closeSettingsBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const state = {
       channels: [],
@@ -294,8 +448,100 @@
       activeEmojiFilters: [],
       favorites: JSON.parse(localStorage.getItem('favorites')) || [],
       currentChannel: null,
-      baseDomain: 'daddylivehd1.my'
+      baseDomain: 'daddylivehd1.my',
+      clearButtonClickCount: 0,
+      lastClearButtonClickTime: 0,
+      internationalFilter: localStorage.getItem('internationalFilter') === 'true',
+      groupChannels: localStorage.getItem('groupChannels') === 'true',
+      filteredKeywords: [
+        "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", 
+        "Bulgaria", "NZ", "BR", "Morocco", "Hungary", "Tennis", "DE", "NL", 
+        "Poland", "Malaysia", "Serbia", "Cyprus", "Croatia", "Israel", "Football", 
+        "SE", "Italy", "Greece", "Brazil", "Portugal", "Czech", "MLB", "Denmark", 
+        "MENA", "Romania", "Disney", "NICK JR", "Turkey"
+      ]
     };
+
+    const sportTranslations = {
+      'Football': 'Fútbol',
+      'Soccer': 'Fútbol',
+      'Basketball': 'Baloncesto',
+      'Tennis': 'Tenis',
+      'Baseball': 'Béisbol',
+      'Boxing': 'Boxeo',
+      'Handball': 'Balonmano',
+      'Cycling': 'Ciclismo',
+      'Swimming': 'Natación',
+      'Athletics': 'Atletismo',
+      'Darts': 'Dardos'
+    };
+
+    function translateSport(sport) {
+      return sportTranslations[sport] || sport;
+    }
+
+    function adjustTime(time) {
+      if (!time || time === 'LIVE') return time;
+      const [hours, minutes] = time.split(':').map(Number);
+      const adjustedHours = (hours + 1) % 24;
+      return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    function getEventDuration(channel) {
+      const sport = channel.sport?.toLowerCase() || '';
+      const event = (channel.event?.toLowerCase() || '').replace(/[^\w\sáéíóúüñ]/gi, '');
+      const name = channel.name.toLowerCase();
+
+      if (/(fútbol|soccer|football)/.test(sport)) {
+        if (/amistoso|friendly/.test(event)) return 115;
+        if (/champions|europa league|libertadores/.test(event)) return 150;
+        if (/mundial|world cup|eurocopa|copa américa/.test(event)) return 135;
+        if (/partido|vs\.|vs |contra/.test(event)) return 105;
+        return 120;
+      } else if (/(baloncesto|basketball)/.test(sport)) {
+        if (/nba/.test(name)) return 150;
+        if (/euroleague|eurocup/.test(name)) return 130;
+        if (/acb|liga endesa/.test(name)) return 120;
+        return 100;
+      } else if (/(béisbol|baseball)/.test(sport)) {
+        if (/mlb|grandes ligas/.test(name)) return 210;
+        return 180;
+      } else if (/(balonmano|handball)/.test(sport)) {
+        return 90;
+      } else if (/(rugby)/.test(sport)) {
+        return 120;
+      } else if (/(hockey|hielo)/.test(sport)) {
+        if (/nhl/.test(name)) return 150;
+        return 120;
+      } else if (/(tenis|tennis)/.test(sport)) {
+        if (/grand slam|wimbledon|open|final/.test(event)) return 300;
+        if (/doble|dobles|double/.test(event)) return 180;
+        return 150;
+      } else if (/(golf)/.test(sport)) {
+        if (/final|última ronda|last round/.test(event)) return 360;
+        return 480;
+      } else if (/(motorsport|fórmula|formula)/.test(sport)) {
+        if (/f1|gran premio|grand prix/.test(event)) return 180;
+        if (/moto gp|motogp/.test(event)) return 120;
+        if (/24h|24 horas|le mans/.test(event)) return 1440;
+        return 240;
+      } else if (/(ciclismo|cycling)/.test(sport)) {
+        if (/etapa|stage/.test(event)) return 300;
+        if (/clásica|monumento/.test(event)) return 240;
+        if (/contrarreloj|time trial/.test(event)) return 180;
+        return 360;
+      } else if (/(boxeo|boxing)/.test(sport)) {
+        if (/main event|combate principal/.test(event)) return 60;
+        if (/pelea|fight|preliminar/.test(event)) return 30;
+        return 180;
+      } else if (/(mma|ufc)/.test(sport)) {
+        if (/main event|combate principal/.test(event)) return 75;
+        if (/co-main|coestelar/.test(event)) return 50;
+        if (/pelea|fight|preliminar/.test(event)) return 15;
+        return 240;
+      }
+      return 120;
+    }
 
     function playChannel(channel) {
       state.currentChannel = channel;
@@ -350,10 +596,36 @@
       renderResults();
     }
 
+    function toggleInternationalFilter() {
+      state.internationalFilter = !state.internationalFilter;
+      localStorage.setItem('internationalFilter', state.internationalFilter);
+      document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
+      renderResults();
+    }
+
+    function toggleGroupChannels() {
+      state.groupChannels = !state.groupChannels;
+      localStorage.setItem('groupChannels', state.groupChannels);
+      document.getElementById('groupChannelsToggle').checked = state.groupChannels;
+      renderResults();
+    }
+
     function filterChannels() {
       return state.channels.filter(channel => {
         if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
-        if (state.currentFilter === 'live' && !channel.time.includes('LIVE')) return false;
+        
+        if (state.currentFilter === 'live') {
+          if (!channel.time) return false;
+          
+          const [hours, minutes] = channel.time.split(':').map(Number);
+          const eventTime = new Date();
+          eventTime.setHours(hours, minutes, 0, 0);
+          const diffMinutes = (new Date() - eventTime) / (1000 * 60);
+          
+          let maxDurationMinutes = getEventDuration(channel);
+          
+          return diffMinutes >= -15 && diffMinutes <= maxDurationMinutes;
+        }
         
         if (state.searchTerm) {
           const term = state.searchTerm.toLowerCase();
@@ -365,6 +637,14 @@
                      !channel.sport.toLowerCase().includes(term)) {
             return false;
           }
+        }
+        
+        if (state.internationalFilter) {
+          const channelName = channel.name;
+          if (state.filteredKeywords.some(keyword => {
+            const regex = new RegExp(`(^|\\s|\\W)${keyword}(\\s|\\W|$)`, 'g');
+            return regex.test(channelName);
+          })) return false;
         }
         
         if (state.activeEmojiFilters.length > 0) {
@@ -392,21 +672,67 @@
         return;
       }
       
-      resultsDiv.innerHTML = filteredChannels.map(channel => {
-        const isFavorite = state.favorites.includes(channel.number);
-        const isLive = channel.time.includes('LIVE');
-        return `
-          <div class="channel-card" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
-            <div class="channel-header">
-              <div class="channel-time ${isLive ? 'channel-time--live' : ''}">${channel.time}</div>
-              <div class="channel-name">${isFavorite ? '★ ' : ''}${channel.name}</div>
-              <div class="channel-number">${channel.number}</div>
+      if (state.groupChannels) {
+        renderGroupedResults(filteredChannels, resultsDiv);
+      } else {
+        renderUngroupedResults(filteredChannels, resultsDiv);
+      }
+    }
+
+    function renderUngroupedResults(channels, container) {
+      container.innerHTML = channels.map(channel => createChannelCard(channel)).join('');
+    }
+
+    function renderGroupedResults(channels, container) {
+      const groups = {};
+      
+      channels.forEach(channel => {
+        const groupKey = `${adjustTime(channel.time)}|${channel.event}|${channel.sport}`;
+        if (!groups[groupKey]) {
+          groups[groupKey] = [];
+        }
+        groups[groupKey].push(channel);
+      });
+      
+      container.innerHTML = '';
+      
+      Object.entries(groups).forEach(([groupKey, groupChannels]) => {
+        const [time, event, sport] = groupKey.split('|');
+        const groupElement = document.createElement('div');
+        groupElement.className = 'channel-group';
+        
+        groupElement.innerHTML = `
+          <div class="channel-group__header">
+            <div class="channel-group__title">
+              <span class="channel-time ${time === 'LIVE' ? 'channel-time--live' : ''}">${time}</span>
+              ${event}
             </div>
-            <div class="channel-event">${channel.event}</div>
-            <div class="channel-sport">${channel.sport}</div>
+            <div class="channel-group__sport">${translateSport(sport)}</div>
+          </div>
+          <div class="channel-group__content ${groupChannels.length === 1 ? 'channel-group__content--single' : ''}">
+            ${groupChannels.map(channel => createChannelCard(channel)).join('')}
           </div>
         `;
-      }).join('');
+        
+        container.appendChild(groupElement);
+      });
+    }
+
+    function createChannelCard(channel) {
+      const isFavorite = state.favorites.includes(channel.number);
+      const isLive = channel.time.includes('LIVE');
+      const adjustedTime = adjustTime(channel.time);
+      return `
+        <div class="channel-card" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
+          <div class="channel-header">
+            ${!state.groupChannels ? `<div class="channel-time ${isLive ? 'channel-time--live' : ''}">${adjustedTime}</div>` : ''}
+            <div class="channel-name">${isFavorite ? '★ ' : ''}${channel.name}</div>
+            <div class="channel-number">${channel.number}</div>
+          </div>
+          ${!state.groupChannels ? `<div class="channel-event">${channel.event}</div>` : ''}
+          ${!state.groupChannels ? `<div class="channel-sport">${translateSport(channel.sport)}</div>` : ''}
+        </div>
+      `;
     }
 
     async function scrape() {
@@ -418,7 +744,7 @@
         const doc = new DOMParser().parseFromString(html, 'text/html');
 
         state.channels = [];
-        let currentSport = '';
+        let currentSport = 'General';
 
         const headings = Array.from(doc.querySelectorAll('h2, p'));
         for (const el of headings) {
@@ -471,10 +797,26 @@
       }
     }
 
+    function handleClearButtonClick() {
+      const now = Date.now();
+      if (now - state.lastClearButtonClickTime > 1000) {
+        state.clearButtonClickCount = 0;
+      }
+      state.clearButtonClickCount++;
+      state.lastClearButtonClickTime = now;
+
+      if (state.clearButtonClickCount >= 3) {
+        document.getElementById('settingsModal').classList.add('modal--active');
+        state.clearButtonClickCount = 0;
+      } else {
+        clearEmojiFilters();
+      }
+    }
+
     document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
     document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
     document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
-    document.getElementById('clearEmojiFilters').addEventListener('click', clearEmojiFilters);
+    document.getElementById('clearEmojiFilters').addEventListener('click', handleClearButtonClick);
     
     document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn));
@@ -488,6 +830,13 @@
     document.getElementById('prevChannelBtn').addEventListener('click', () => navigateChannel('prev'));
     document.getElementById('nextChannelBtn').addEventListener('click', () => navigateChannel('next'));
     document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+      document.getElementById('settingsModal').classList.remove('modal--active');
+    });
+    document.getElementById('internationalFilterToggle').addEventListener('change', toggleInternationalFilter);
+    document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
+    document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
+    document.getElementById('groupChannelsToggle').checked = state.groupChannels;
 
     scrape();
   </script>
