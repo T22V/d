@@ -343,6 +343,14 @@
     .channel-group__content--single {
       grid-template-columns: 1fr;
     }
+    .offline-message {
+      background: #fef2f2;
+      color: #dc2626;
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
     @keyframes pulse {
       0% { opacity: 1; }
       50% { opacity: 0.3; }
@@ -398,6 +406,7 @@
         <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
         <button class="filter-button filter-button--active" id="filterAll">Todos</button>
         <button class="filter-button" id="filterLive">Directo</button>
+        <button class="filter-button" id="filterHistory">Historial</button>
         <button class="filter-button filter-button--clear" id="clearEmojiFilters">x</button>
       </div>
       
@@ -414,6 +423,7 @@
       </div>
     </div>
     
+    <div id="offlineMessage" class="offline-message" style="display: none;">Modo offline: mostrando canales del historial</div>
     <div class="channels-grid" id="results">Cargando canales...</div>
   </div>
 
@@ -442,17 +452,19 @@
 
   <script>
     const state = {
-      channels: [],
+      channels: JSON.parse(localStorage.getItem('channelsCache')) || [],
       currentFilter: 'all',
       searchTerm: '',
       activeEmojiFilters: [],
       favorites: JSON.parse(localStorage.getItem('favorites')) || [],
+      channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {},
       currentChannel: null,
       baseDomain: 'daddylivehd1.my',
       clearButtonClickCount: 0,
       lastClearButtonClickTime: 0,
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
       groupChannels: localStorage.getItem('groupChannels') === 'true',
+      isOnline: navigator.onLine,
       filteredKeywords: [
         "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", 
         "Bulgaria", "NZ", "BR", "Morocco", "Hungary", "Tennis", "DE", "NL", 
@@ -463,17 +475,9 @@
     };
 
     const sportTranslations = {
-      'Football': 'Fútbol',
-      'Soccer': 'Fútbol',
-      'Basketball': 'Baloncesto',
-      'Tennis': 'Tenis',
-      'Baseball': 'Béisbol',
-      'Boxing': 'Boxeo',
-      'Handball': 'Balonmano',
-      'Cycling': 'Ciclismo',
-      'Swimming': 'Natación',
-      'Athletics': 'Atletismo',
-      'Darts': 'Dardos'
+      'Football': 'Fútbol', 'Soccer': 'Fútbol', 'Basketball': 'Baloncesto', 'Tennis': 'Tenis',
+      'Baseball': 'Béisbol', 'Boxing': 'Boxeo', 'Handball': 'Balonmano', 'Cycling': 'Ciclismo',
+      'Swimming': 'Natación', 'Athletics': 'Atletismo', 'Darts': 'Dardos'
     };
 
     function translateSport(sport) {
@@ -487,67 +491,27 @@
       return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
-    function getEventDuration(channel) {
-      const sport = channel.sport?.toLowerCase() || '';
-      const event = (channel.event?.toLowerCase() || '').replace(/[^\w\sáéíóúüñ]/gi, '');
-      const name = channel.name.toLowerCase();
-
-      if (/(fútbol|soccer|football)/.test(sport)) {
-        if (/amistoso|friendly/.test(event)) return 115;
-        if (/champions|europa league|libertadores/.test(event)) return 150;
-        if (/mundial|world cup|eurocopa|copa américa/.test(event)) return 135;
-        if (/partido|vs\.|vs |contra/.test(event)) return 105;
-        return 120;
-      } else if (/(baloncesto|basketball)/.test(sport)) {
-        if (/nba/.test(name)) return 150;
-        if (/euroleague|eurocup/.test(name)) return 130;
-        if (/acb|liga endesa/.test(name)) return 120;
-        return 100;
-      } else if (/(béisbol|baseball)/.test(sport)) {
-        if (/mlb|grandes ligas/.test(name)) return 210;
-        return 180;
-      } else if (/(balonmano|handball)/.test(sport)) {
-        return 90;
-      } else if (/(rugby)/.test(sport)) {
-        return 120;
-      } else if (/(hockey|hielo)/.test(sport)) {
-        if (/nhl/.test(name)) return 150;
-        return 120;
-      } else if (/(tenis|tennis)/.test(sport)) {
-        if (/grand slam|wimbledon|open|final/.test(event)) return 300;
-        if (/doble|dobles|double/.test(event)) return 180;
-        return 150;
-      } else if (/(golf)/.test(sport)) {
-        if (/final|última ronda|last round/.test(event)) return 360;
-        return 480;
-      } else if (/(motorsport|fórmula|formula)/.test(sport)) {
-        if (/f1|gran premio|grand prix/.test(event)) return 180;
-        if (/moto gp|motogp/.test(event)) return 120;
-        if (/24h|24 horas|le mans/.test(event)) return 1440;
-        return 240;
-      } else if (/(ciclismo|cycling)/.test(sport)) {
-        if (/etapa|stage/.test(event)) return 300;
-        if (/clásica|monumento/.test(event)) return 240;
-        if (/contrarreloj|time trial/.test(event)) return 180;
-        return 360;
-      } else if (/(boxeo|boxing)/.test(sport)) {
-        if (/main event|combate principal/.test(event)) return 60;
-        if (/pelea|fight|preliminar/.test(event)) return 30;
-        return 180;
-      } else if (/(mma|ufc)/.test(sport)) {
-        if (/main event|combate principal/.test(event)) return 75;
-        if (/co-main|coestelar/.test(event)) return 50;
-        if (/pelea|fight|preliminar/.test(event)) return 15;
-        return 240;
+    function updateChannelHistory(channel) {
+      const historyEntry = state.channelHistory[channel.number] || { names: [], isFavorite: false };
+      
+      if (!historyEntry.names.includes(channel.name)) {
+        historyEntry.names.push(channel.name);
       }
-      return 120;
+      
+      historyEntry.isFavorite = state.favorites.includes(channel.number);
+      state.channelHistory[channel.number] = historyEntry;
+      localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
     }
 
     function playChannel(channel) {
       state.currentChannel = channel;
+      updateChannelHistory(channel);
       document.getElementById('playerContainer').classList.add('player-container--active');
       document.getElementById('playerControls').classList.add('player-controls--active');
-      document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
+      
+      if (state.isOnline) {
+        document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
+      }
     }
 
     function closePlayer() {
@@ -570,6 +534,7 @@
       document.getElementById('filterAll').classList.remove('filter-button--active');
       document.getElementById('filterLive').classList.remove('filter-button--active');
       document.getElementById('filterFavorites').classList.remove('filter-button--active');
+      document.getElementById('filterHistory').classList.remove('filter-button--active');
       document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('filter-button--active');
       renderResults();
     }
@@ -593,6 +558,12 @@
       if (index === -1) state.favorites.push(channelNumber);
       else state.favorites.splice(index, 1);
       localStorage.setItem('favorites', JSON.stringify(state.favorites));
+      
+      if (state.channelHistory[channelNumber]) {
+        state.channelHistory[channelNumber].isFavorite = index === -1;
+        localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
+      }
+      
       renderResults();
     }
 
@@ -611,21 +582,23 @@
     }
 
     function filterChannels() {
-      return state.channels.filter(channel => {
+      if (state.currentFilter === 'history') {
+        return Object.keys(state.channelHistory).map(number => {
+          const history = state.channelHistory[number];
+          return {
+            number,
+            name: history.names[0],
+            time: '',
+            event: 'Visto anteriormente',
+            sport: 'Historial',
+            isFavorite: history.isFavorite
+          };
+        });
+      }
+
+      return (state.isOnline ? state.channels : []).filter(channel => {
         if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
-        
-        if (state.currentFilter === 'live') {
-          if (!channel.time) return false;
-          
-          const [hours, minutes] = channel.time.split(':').map(Number);
-          const eventTime = new Date();
-          eventTime.setHours(hours, minutes, 0, 0);
-          const diffMinutes = (new Date() - eventTime) / (1000 * 60);
-          
-          let maxDurationMinutes = getEventDuration(channel);
-          
-          return diffMinutes >= -15 && diffMinutes <= maxDurationMinutes;
-        }
+        if (state.currentFilter === 'live' && !channel.time) return false;
         
         if (state.searchTerm) {
           const term = state.searchTerm.toLowerCase();
@@ -667,12 +640,14 @@
       const filteredChannels = filterChannels();
       const resultsDiv = document.getElementById('results');
       
+      document.getElementById('offlineMessage').style.display = state.isOnline ? 'none' : 'block';
+      
       if (filteredChannels.length === 0) {
         resultsDiv.innerHTML = '<p>No se encontraron canales</p>';
         return;
       }
       
-      if (state.groupChannels) {
+      if (state.groupChannels && state.currentFilter !== 'history') {
         renderGroupedResults(filteredChannels, resultsDiv);
       } else {
         renderUngroupedResults(filteredChannels, resultsDiv);
@@ -688,9 +663,7 @@
       
       channels.forEach(channel => {
         const groupKey = `${adjustTime(channel.time)}|${channel.event}|${channel.sport}`;
-        if (!groups[groupKey]) {
-          groups[groupKey] = [];
-        }
+        if (!groups[groupKey]) groups[groupKey] = [];
         groups[groupKey].push(channel);
       });
       
@@ -719,31 +692,37 @@
     }
 
     function createChannelCard(channel) {
-      const isFavorite = state.favorites.includes(channel.number);
-      const isLive = channel.time.includes('LIVE');
+      const isFavorite = state.favorites.includes(channel.number) || 
+                        (state.channelHistory[channel.number]?.isFavorite ?? false);
+      const isLive = channel.time?.includes('LIVE');
       const adjustedTime = adjustTime(channel.time);
       return `
         <div class="channel-card" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
-            ${!state.groupChannels ? `<div class="channel-time ${isLive ? 'channel-time--live' : ''}">${adjustedTime}</div>` : ''}
+            ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time ${isLive ? 'channel-time--live' : ''}">${adjustedTime}</div>` : ''}
             <div class="channel-name">${isFavorite ? '★ ' : ''}${channel.name}</div>
             <div class="channel-number">${channel.number}</div>
           </div>
-          ${!state.groupChannels ? `<div class="channel-event">${channel.event}</div>` : ''}
-          ${!state.groupChannels ? `<div class="channel-sport">${translateSport(channel.sport)}</div>` : ''}
+          ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-event">${channel.event}</div>` : ''}
+          ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-sport">${translateSport(channel.sport)}</div>` : ''}
         </div>
       `;
     }
 
     async function scrape() {
       try {
+        if (!state.isOnline) {
+          renderResults();
+          return;
+        }
+
         const proxy = 'https://corsproxy.io/?';
         const url = proxy + encodeURIComponent(`https://${state.baseDomain}/`);
         const res = await fetch(url);
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
 
-        state.channels = [];
+        const newChannels = [];
         let currentSport = 'General';
 
         const headings = Array.from(doc.querySelectorAll('h2, p'));
@@ -772,11 +751,9 @@
                   const url = new URL(link.getAttribute('href'), `https://${state.baseDomain}`).href;
 
                   const domainMatch = link.href.match(/https?:\/\/(daddylivehd[^\/]+)/i);
-                  if (domainMatch && domainMatch[1]) {
-                    state.baseDomain = domainMatch[1];
-                  }
+                  if (domainMatch && domainMatch[1]) state.baseDomain = domainMatch[1];
 
-                  state.channels.push({
+                  newChannels.push({
                     number,
                     name,
                     url,
@@ -790,18 +767,26 @@
           }
         }
 
+        if (newChannels.length > 0) {
+          state.channels = newChannels;
+          localStorage.setItem('channelsCache', JSON.stringify(newChannels));
+        }
+        
         renderResults();
       } catch (err) {
-        document.getElementById('results').innerHTML = '<p>Error al cargar datos</p>';
-        console.error('Error:', err);
+        console.error('Error al cargar datos:', err);
+        if (state.channels.length > 0 || Object.keys(state.channelHistory).length > 0) {
+          renderResults();
+          document.getElementById('results').innerHTML += '<p style="color:red;">Mostrando datos en caché</p>';
+        } else {
+          document.getElementById('results').innerHTML = '<p>Error al cargar datos</p>';
+        }
       }
     }
 
     function handleClearButtonClick() {
       const now = Date.now();
-      if (now - state.lastClearButtonClickTime > 1000) {
-        state.clearButtonClickCount = 0;
-      }
+      if (now - state.lastClearButtonClickTime > 1000) state.clearButtonClickCount = 0;
       state.clearButtonClickCount++;
       state.lastClearButtonClickTime = now;
 
@@ -813,9 +798,19 @@
       }
     }
 
+    function handleOnlineStatusChange() {
+      state.isOnline = navigator.onLine;
+      if (state.isOnline) {
+        scrape();
+      } else {
+        renderResults();
+      }
+    }
+
     document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
     document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
     document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
+    document.getElementById('filterHistory').addEventListener('click', () => applyFilter('history'));
     document.getElementById('clearEmojiFilters').addEventListener('click', handleClearButtonClick);
     
     document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
@@ -837,6 +832,9 @@
     document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
     document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
     document.getElementById('groupChannelsToggle').checked = state.groupChannels;
+
+    window.addEventListener('online', handleOnlineStatusChange);
+    window.addEventListener('offline', handleOnlineStatusChange);
 
     scrape();
   </script>
