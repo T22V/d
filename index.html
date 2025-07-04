@@ -443,7 +443,6 @@
       <div class="player-container" id="playerContainer">
         <iframe id="videoFrame" allowfullscreen></iframe>
       </div>
-      
       <div class="player-controls" id="playerControls">
         <span class="channel-info" id="channelInfo"></span>
         <button class="control-btn" id="prevChannelBtn" title="Canal anterior">◄</button>
@@ -454,12 +453,10 @@
         <span class="channel-number-display" id="channelNumberDisplay"></span>
       </div>
     </div>
-    
     <div class="search-filters">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Buscar canales, número (ej: #123) o hora (ej: 15:30)">
       </div>
-      
       <div class="filter-buttons">
         <button class="filter-button filter-button--favorites" id="filterFavorites">★</button>
         <button class="filter-button filter-button--active" id="filterAll">Todos</button>
@@ -467,7 +464,6 @@
         <button class="filter-button" id="filterHistory">Historial</button>
         <button class="filter-button filter-button--clear" id="clearEmojiFilters">x</button>
       </div>
-      
       <div class="emoji-filters" id="emojiFilters">
         <button class="emoji-filter-btn" data-filter="TV Shows" title="TV Shows">📺</button>
         <button class="emoji-filter-btn" data-filter="Fútbol" title="Fútbol">⚽</button>
@@ -480,12 +476,10 @@
         <button class="emoji-filter-btn" data-filter="Spain ES Movistar M+" title="España">🇪🇸</button>
       </div>
     </div>
-    
     <div id="offlineMessage" class="offline-message" style="display: none;">Modo offline: mostrando canales del historial</div>
     <div id="updateNotification" class="update-notification" style="display: none;"></div>
     <div class="channels-grid" id="results">Cargando canales...</div>
   </div>
-
   <div class="modal" id="settingsModal">
     <div class="modal__content">
       <h3 class="modal__title">Ajustes</h3>
@@ -508,7 +502,6 @@
       </div>
     </div>
   </div>
-
   <div class="modal" id="favoriteModal">
     <div class="modal__content">
       <h3 class="modal__title">Guardar Favorito</h3>
@@ -519,7 +512,6 @@
       </div>
     </div>
   </div>
-
   <script>
     const state = {
       channels: JSON.parse(localStorage.getItem('channelsCache')) || [],
@@ -551,6 +543,11 @@
       'Swimming': 'Natación', 'Athletics': 'Atletismo', 'Darts': 'Dardos'
     };
 
+    const dayTranslations = {
+      'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles', 'Thursday': 'Jueves',
+      'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+    };
+
     const monthTranslations = {
       'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
       'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
@@ -565,11 +562,12 @@
       const parts = dateStr.split(' ');
       if (parts.length < 4) return dateStr;
       
+      const dayName = dayTranslations[parts[0]] || parts[0];
       const day = parts[1].replace(/(\d+)(st|nd|rd|th)/, '$1');
       const month = monthTranslations[parts[2]] || parts[2];
       const year = parts[3];
       
-      return `${parts[0]} ${day} de ${month} de ${year}`;
+      return `${dayName} ${day} de ${month} de ${year}`;
     }
 
     function adjustTime(time) {
@@ -581,11 +579,7 @@
 
     function updateChannelHistory(channel) {
       const historyEntry = state.channelHistory[channel.number] || { names: [], isFavorite: false };
-      
-      if (!historyEntry.names.includes(channel.name)) {
-        historyEntry.names.push(channel.name);
-      }
-      
+      if (!historyEntry.names.includes(channel.name)) historyEntry.names.push(channel.name);
       historyEntry.isFavorite = state.favorites.includes(channel.number);
       state.channelHistory[channel.number] = historyEntry;
       localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
@@ -594,21 +588,12 @@
     function playChannel(channel) {
       state.currentChannel = channel;
       updateChannelHistory(channel);
-      
       document.getElementById('playerContainer').classList.add('player-container--active');
       document.getElementById('playerControls').classList.add('player-controls--active');
       document.getElementById('channelInfo').textContent = channel.name;
       document.getElementById('channelNumberDisplay').textContent = `CH-${channel.number}`;
-      
-      document.getElementById('favoriteBtn').classList.toggle(
-        'control-btn--active', 
-        state.favorites.includes(channel.number) || 
-        (state.channelHistory[channel.number]?.isFavorite ?? false)
-      );
-      
-      if (state.isOnline) {
-        document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
-      }
+      document.getElementById('favoriteBtn').classList.toggle('control-btn--active', state.favorites.includes(channel.number) || (state.channelHistory[channel.number]?.isFavorite ?? false));
+      if (state.isOnline) document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
     }
 
     function closePlayer() {
@@ -622,38 +607,27 @@
 
     function navigateChannel(direction) {
       if (!state.currentChannel) return;
-      
-      const currentNumber = parseInt(state.currentChannel.number);
-      let newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
-      
+      let newNumber = direction === 'next' ? parseInt(state.currentChannel.number) + 1 : parseInt(state.currentChannel.number) - 1;
       newNumber = Math.max(1, newNumber);
-      
       let nextChannel = state.channels.find(c => parseInt(c.number) === newNumber);
-      
       if (!nextChannel) {
         const sortedChannels = [...state.channels].sort((a, b) => parseInt(a.number) - parseInt(b.number));
-        
         if (direction === 'next') {
-          nextChannel = sortedChannels.find(c => parseInt(c.number) > currentNumber);
+          nextChannel = sortedChannels.find(c => parseInt(c.number) > parseInt(state.currentChannel.number));
           if (!nextChannel) nextChannel = sortedChannels[0];
         } else {
-          nextChannel = [...sortedChannels].reverse().find(c => parseInt(c.number) < currentNumber);
+          nextChannel = [...sortedChannels].reverse().find(c => parseInt(c.number) < parseInt(state.currentChannel.number));
           if (!nextChannel) nextChannel = sortedChannels[sortedChannels.length - 1];
         }
       }
-      
-      if (nextChannel) {
-        playChannel(nextChannel);
-      }
+      if (nextChannel) playChannel(nextChannel);
     }
 
     function toggleStickyPlayer() {
       state.stickyPlayer = !state.stickyPlayer;
       localStorage.setItem('stickyPlayer', state.stickyPlayer);
-      
       const playerSection = document.getElementById('playerSection');
       const stickyBtn = document.getElementById('toggleStickyBtn');
-      
       if (state.stickyPlayer) {
         playerSection.classList.add('player-section--sticky');
         stickyBtn.innerHTML = '⛉';
@@ -677,67 +651,39 @@
 
     function saveFavorite() {
       const favoriteName = document.getElementById('favoriteNameInput').value.trim();
-      if (!favoriteName) {
-        alert('Por favor ingresa un nombre para el favorito');
-        return;
-      }
-
+      if (!favoriteName) return alert('Por favor ingresa un nombre para el favorito');
       if (!state.currentChannel) return;
-
       const channelNumber = state.currentChannel.number;
-      if (!state.favorites.includes(channelNumber)) {
-        state.favorites.push(channelNumber);
-        localStorage.setItem('favorites', JSON.stringify(state.favorites));
-      }
-      
+      if (!state.favorites.includes(channelNumber)) state.favorites.push(channelNumber);
+      localStorage.setItem('favorites', JSON.stringify(state.favorites));
       if (state.channelHistory[channelNumber]) {
         state.channelHistory[channelNumber].isFavorite = true;
         localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
       }
-      
       document.getElementById('favoriteBtn').classList.add('control-btn--active');
       hideFavoriteModal();
-      
-      if (state.currentFilter === 'favorites') {
-        renderResults();
-      }
+      if (state.currentFilter === 'favorites') renderResults();
     }
 
     function removeFavorite() {
       if (!state.currentChannel) return;
-      
       const channelNumber = state.currentChannel.number;
       const index = state.favorites.indexOf(channelNumber);
-      if (index !== -1) {
-        state.favorites.splice(index, 1);
-        localStorage.setItem('favorites', JSON.stringify(state.favorites));
-      }
-      
+      if (index !== -1) state.favorites.splice(index, 1);
+      localStorage.setItem('favorites', JSON.stringify(state.favorites));
       if (state.channelHistory[channelNumber]) {
         state.channelHistory[channelNumber].isFavorite = false;
         localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
       }
-      
       document.getElementById('favoriteBtn').classList.remove('control-btn--active');
-      
-      if (state.currentFilter === 'favorites') {
-        renderResults();
-      }
+      if (state.currentFilter === 'favorites') renderResults();
     }
 
     function handleFavoriteClick() {
       if (!state.currentChannel) return;
-
-      const isFavorite = state.favorites.includes(state.currentChannel.number) || 
-                        (state.channelHistory[state.currentChannel.number]?.isFavorite ?? false);
-      
-      if (isFavorite) {
-        if (confirm('¿Quieres eliminar este canal de favoritos?')) {
-          removeFavorite();
-        }
-      } else {
-        showFavoriteModal();
-      }
+      const isFavorite = state.favorites.includes(state.currentChannel.number) || (state.channelHistory[state.currentChannel.number]?.isFavorite ?? false);
+      if (isFavorite) confirm('¿Quieres eliminar este canal de favoritos?') && removeFavorite();
+      else showFavoriteModal();
     }
 
     function applyFilter(filter) {
@@ -780,55 +726,38 @@
 
     function filterChannels() {
       if (state.currentFilter === 'history') {
-        return Object.keys(state.channelHistory).map(number => {
-          const history = state.channelHistory[number];
-          return {
-            number,
-            name: history.names[0],
-            time: '',
-            event: 'Visto anteriormente',
-            sport: 'Historial',
-            isFavorite: history.isFavorite
-          };
-        });
+        return Object.keys(state.channelHistory).map(number => ({
+          number,
+          name: state.channelHistory[number].names[0],
+          time: '',
+          event: 'Visto anteriormente',
+          sport: 'Historial',
+          isFavorite: state.channelHistory[number].isFavorite
+        }));
       }
 
       return (state.isOnline ? state.channels : []).filter(channel => {
         if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
         if (state.currentFilter === 'live' && !channel.time) return false;
-        
         if (state.searchTerm) {
           const term = state.searchTerm.toLowerCase();
           if (/^#?\d+$/.test(term)) {
             const channelNumber = term.replace('#', '');
             if (channel.number !== channelNumber) return false;
-          } else if (!channel.name.toLowerCase().includes(term) && 
-                     !channel.event.toLowerCase().includes(term) && 
-                     !channel.sport.toLowerCase().includes(term)) {
-            return false;
-          }
+          } else if (!channel.name.toLowerCase().includes(term) && !channel.event.toLowerCase().includes(term) && !channel.sport.toLowerCase().includes(term)) return false;
         }
-        
         if (state.internationalFilter) {
           const channelName = channel.name;
-          if (state.filteredKeywords.some(keyword => {
-            const regex = new RegExp(`(^|\\s|\\W)${keyword}(\\s|\\W|$)`, 'g');
-            return regex.test(channelName);
-          })) return false;
+          if (state.filteredKeywords.some(keyword => new RegExp(`(^|\\s|\\W)${keyword}(\\s|\\W|$)`, 'g').test(channelName))) return false;
         }
-        
         if (state.activeEmojiFilters.length > 0) {
           const matchesFilter = state.activeEmojiFilters.some(filter => {
             if (filter === "Tenis") return channel.sport.includes("Tenis") || channel.sport.includes("Tennis");
-            if (filter === "Spain ES Movistar M+") {
-              return channel.name.includes('Spain') || channel.name.includes(' ES ') || 
-                     channel.name.includes('Movistar') || channel.name.includes('M+');
-            }
+            if (filter === "Spain ES Movistar M+") return channel.name.includes('Spain') || channel.name.includes(' ES ') || channel.name.includes('Movistar') || channel.name.includes('M+');
             return channel.sport.includes(filter);
           });
           if (!matchesFilter) return false;
         }
-        
         return true;
       });
     }
@@ -836,19 +765,10 @@
     function renderResults() {
       const filteredChannels = filterChannels();
       const resultsDiv = document.getElementById('results');
-      
       document.getElementById('offlineMessage').style.display = state.isOnline ? 'none' : 'block';
-      
-      if (filteredChannels.length === 0) {
-        resultsDiv.innerHTML = '<p>No se encontraron canales</p>';
-        return;
-      }
-      
-      if (state.groupChannels && state.currentFilter !== 'history') {
-        renderGroupedResults(filteredChannels, resultsDiv);
-      } else {
-        renderUngroupedResults(filteredChannels, resultsDiv);
-      }
+      if (filteredChannels.length === 0) return resultsDiv.innerHTML = '<p>No se encontraron canales</p>';
+      if (state.groupChannels && state.currentFilter !== 'history') renderGroupedResults(filteredChannels, resultsDiv);
+      else renderUngroupedResults(filteredChannels, resultsDiv);
     }
 
     function renderUngroupedResults(channels, container) {
@@ -857,20 +777,16 @@
 
     function renderGroupedResults(channels, container) {
       const groups = {};
-      
       channels.forEach(channel => {
         const groupKey = `${adjustTime(channel.time)}|${channel.event}|${channel.sport}`;
         if (!groups[groupKey]) groups[groupKey] = [];
         groups[groupKey].push(channel);
       });
-      
       container.innerHTML = '';
-      
       Object.entries(groups).forEach(([groupKey, groupChannels]) => {
         const [time, event, sport] = groupKey.split('|');
         const groupElement = document.createElement('div');
         groupElement.className = 'channel-group';
-        
         groupElement.innerHTML = `
           <div class="channel-group__header">
             <div class="channel-group__title">
@@ -883,14 +799,12 @@
             ${groupChannels.map(channel => createChannelCard(channel)).join('')}
           </div>
         `;
-        
         container.appendChild(groupElement);
       });
     }
 
     function createChannelCard(channel) {
-      const isFavorite = state.favorites.includes(channel.number) || 
-                        (state.channelHistory[channel.number]?.isFavorite ?? false);
+      const isFavorite = state.favorites.includes(channel.number) || (state.channelHistory[channel.number]?.isFavorite ?? false);
       const isLive = channel.time?.includes('LIVE');
       const adjustedTime = adjustTime(channel.time);
       return `
@@ -908,18 +822,12 @@
 
     async function scrape() {
       try {
-        if (!state.isOnline) {
-          renderResults();
-          return;
-        }
-
+        if (!state.isOnline) return renderResults();
         const proxy = 'https://corsproxy.io/?';
         const url = proxy + encodeURIComponent(`https://${state.baseDomain}/`);
         const res = await fetch(url);
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
-
-        // Extraer la fecha de actualización
         const updateDateElement = doc.querySelector('h2[style*="background-color: #ff0000"]');
         if (updateDateElement) {
           const updateDateText = updateDateElement.textContent.trim();
@@ -929,66 +837,48 @@
           notification.style.display = 'block';
           setTimeout(() => notification.style.display = 'none', 5000);
         }
-
         const newChannels = [];
         let currentSport = 'General';
-
         const headings = Array.from(doc.querySelectorAll('h2, p'));
         for (const el of headings) {
           if (el.tagName === 'H2') {
             currentSport = el.textContent.trim();
             continue;
           }
-
           if (el.tagName === 'P') {
             const strongs = el.querySelectorAll('strong');
             strongs.forEach(strong => {
               const text = strong.childNodes[0]?.textContent?.trim();
               const timeMatch = text?.match(/^(\d{1,2}:\d{2})\s+(.+?)$/);
               const links = strong.querySelectorAll('a');
-
               if (timeMatch && links.length) {
                 const time = timeMatch[1];
                 const event = timeMatch[2];
-
                 links.forEach(link => {
                   const nameRaw = link.textContent.trim();
                   const numberMatch = nameRaw.match(/\(CH-(\d+)\)/);
                   const number = numberMatch ? numberMatch[1] : '';
                   const name = nameRaw.replace(/\s*\(CH-\d+\)/, '');
                   const url = new URL(link.getAttribute('href'), `https://${state.baseDomain}`).href;
-
                   const domainMatch = link.href.match(/https?:\/\/(daddylivehd[^\/]+)/i);
                   if (domainMatch && domainMatch[1]) state.baseDomain = domainMatch[1];
-
-                  newChannels.push({
-                    number,
-                    name,
-                    url,
-                    time,
-                    event,
-                    sport: currentSport
-                  });
+                  newChannels.push({ number, name, url, time, event, sport: currentSport });
                 });
               }
             });
           }
         }
-
         if (newChannels.length > 0) {
           state.channels = newChannels;
           localStorage.setItem('channelsCache', JSON.stringify(newChannels));
         }
-        
         renderResults();
       } catch (err) {
         console.error('Error al cargar datos:', err);
         if (state.channels.length > 0 || Object.keys(state.channelHistory).length > 0) {
           renderResults();
           document.getElementById('results').innerHTML += '<p style="color:red;">Mostrando datos en caché</p>';
-        } else {
-          document.getElementById('results').innerHTML = '<p>Error al cargar datos</p>';
-        }
+        } else document.getElementById('results').innerHTML = '<p>Error al cargar datos</p>';
       }
     }
 
@@ -997,22 +887,15 @@
       if (now - state.lastClearButtonClickTime > 1000) state.clearButtonClickCount = 0;
       state.clearButtonClickCount++;
       state.lastClearButtonClickTime = now;
-
       if (state.clearButtonClickCount >= 3) {
         document.getElementById('settingsModal').classList.add('modal--active');
         state.clearButtonClickCount = 0;
-      } else {
-        clearEmojiFilters();
-      }
+      } else clearEmojiFilters();
     }
 
     function handleOnlineStatusChange() {
       state.isOnline = navigator.onLine;
-      if (state.isOnline) {
-        scrape();
-      } else {
-        renderResults();
-      }
+      state.isOnline ? scrape() : renderResults();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1021,34 +904,23 @@
       document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
       document.getElementById('filterHistory').addEventListener('click', () => applyFilter('history'));
       document.getElementById('clearEmojiFilters').addEventListener('click', handleClearButtonClick);
-      
-      document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn));
-      });
-
+      document.querySelectorAll('.emoji-filter-btn').forEach(btn => btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn)));
       document.getElementById('searchInput').addEventListener('input', (e) => {
         state.searchTerm = e.target.value.trim();
         renderResults();
       });
-
       document.getElementById('prevChannelBtn').addEventListener('click', () => navigateChannel('prev'));
       document.getElementById('nextChannelBtn').addEventListener('click', () => navigateChannel('next'));
       document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
       document.getElementById('toggleStickyBtn').addEventListener('click', toggleStickyPlayer);
       document.getElementById('favoriteBtn').addEventListener('click', handleFavoriteClick);
-      
-      document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-        document.getElementById('settingsModal').classList.remove('modal--active');
-      });
-      
+      document.getElementById('closeSettingsBtn').addEventListener('click', () => document.getElementById('settingsModal').classList.remove('modal--active'));
       document.getElementById('saveFavoriteBtn').addEventListener('click', saveFavorite);
       document.getElementById('cancelFavoriteBtn').addEventListener('click', hideFavoriteModal);
-      
       document.getElementById('internationalFilterToggle').addEventListener('change', toggleInternationalFilter);
       document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
       document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
       document.getElementById('groupChannelsToggle').checked = state.groupChannels;
-      
       if (state.stickyPlayer) {
         document.getElementById('playerSection').classList.add('player-section--sticky');
         document.getElementById('toggleStickyBtn').innerHTML = '⛉';
@@ -1057,10 +929,8 @@
         document.getElementById('toggleStickyBtn').innerHTML = '⛊';
         document.getElementById('toggleStickyBtn').title = "Fijar reproductor";
       }
-
       window.addEventListener('online', handleOnlineStatusChange);
       window.addEventListener('offline', handleOnlineStatusChange);
-
       scrape();
     });
   </script>
