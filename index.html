@@ -29,11 +29,6 @@
       margin: 1rem auto;
       padding: 0 1rem;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      padding: 0 1rem;
-    }
     .search-filters {
       background: var(--card-bg);
       border-radius: var(--radius-md);
@@ -199,6 +194,11 @@
       gap: 10px;
       justify-content: center;
       margin-bottom: 1rem;
+      padding: 10px;
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      position: relative;
     }
     .player-controls--active {
       display: flex;
@@ -214,6 +214,29 @@
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+    .control-btn--active {
+      background: var(--primary-dark);
+    }
+    .channel-info {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.9rem;
+      font-weight: 600;
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .channel-number-display {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.9rem;
+      font-weight: 600;
     }
     .modal {
       position: fixed;
@@ -351,6 +374,14 @@
       margin-bottom: 1rem;
       text-align: center;
     }
+    .player-section--sticky {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-light);
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+    }
     @keyframes pulse {
       0% { opacity: 1; }
       50% { opacity: 0.3; }
@@ -365,6 +396,20 @@
       }
       .channel-group__content {
         grid-template-columns: 1fr;
+      }
+      .channel-info, .channel-number-display {
+        position: static;
+        transform: none;
+        font-size: 0.75rem;
+        max-width: 30%;
+      }
+      .channel-info {
+        text-align: left;
+        flex: 1;
+      }
+      .channel-number-display {
+        text-align: right;
+        margin-left: auto;
       }
     }
     @media (min-width: 768px) {
@@ -385,16 +430,20 @@
 </head>
 <body>
   <div class="main-container">
-    <h1>📺</h1>
-    
-    <div class="player-container" id="playerContainer">
-      <iframe id="videoFrame" allowfullscreen></iframe>
-    </div>
-    
-    <div class="player-controls" id="playerControls">
-      <button class="control-btn" id="prevChannelBtn">◄</button>
-      <button class="control-btn" id="nextChannelBtn">►</button>
-      <button class="control-btn" id="closePlayerBtn">×</button>
+    <div class="player-section" id="playerSection">
+      <div class="player-container" id="playerContainer">
+        <iframe id="videoFrame" allowfullscreen></iframe>
+      </div>
+      
+      <div class="player-controls" id="playerControls">
+        <span class="channel-info" id="channelInfo"></span>
+        <button class="control-btn" id="prevChannelBtn" title="Canal anterior">◄</button>
+        <button class="control-btn" id="nextChannelBtn" title="Canal siguiente">►</button>
+        <button class="control-btn" id="toggleStickyBtn" title="Fijar reproductor">⛊</button>
+        <button class="control-btn" id="favoriteBtn" title="Guardar favorito">★</button>
+        <button class="control-btn" id="closePlayerBtn" title="Cerrar">×</button>
+        <span class="channel-number-display" id="channelNumberDisplay"></span>
+      </div>
     </div>
     
     <div class="search-filters">
@@ -450,6 +499,17 @@
     </div>
   </div>
 
+  <div class="modal" id="favoriteModal">
+    <div class="modal__content">
+      <h3 class="modal__title">Guardar Favorito</h3>
+      <input class="modal__input" id="favoriteNameInput" placeholder="Nombre personalizado" type="text"/>
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--secondary" id="cancelFavoriteBtn">Cancelar</button>
+        <button class="modal__btn modal__btn--primary" id="saveFavoriteBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const state = {
       channels: JSON.parse(localStorage.getItem('channelsCache')) || [],
@@ -465,6 +525,7 @@
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
       groupChannels: localStorage.getItem('groupChannels') === 'true',
       isOnline: navigator.onLine,
+      stickyPlayer: localStorage.getItem('stickyPlayer') === 'true',
       filteredKeywords: [
         "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", 
         "Bulgaria", "NZ", "BR", "Morocco", "Hungary", "Tennis", "DE", "NL", 
@@ -506,8 +567,17 @@
     function playChannel(channel) {
       state.currentChannel = channel;
       updateChannelHistory(channel);
+      
       document.getElementById('playerContainer').classList.add('player-container--active');
       document.getElementById('playerControls').classList.add('player-controls--active');
+      document.getElementById('channelInfo').textContent = channel.name;
+      document.getElementById('channelNumberDisplay').textContent = `CH-${channel.number}`;
+      
+      document.getElementById('favoriteBtn').classList.toggle(
+        'control-btn--active', 
+        state.favorites.includes(channel.number) || 
+        (state.channelHistory[channel.number]?.isFavorite ?? false)
+      );
       
       if (state.isOnline) {
         document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
@@ -518,15 +588,132 @@
       document.getElementById('playerContainer').classList.remove('player-container--active');
       document.getElementById('playerControls').classList.remove('player-controls--active');
       document.getElementById('videoFrame').src = '';
+      document.getElementById('channelInfo').textContent = '';
+      document.getElementById('channelNumberDisplay').textContent = '';
       state.currentChannel = null;
     }
 
     function navigateChannel(direction) {
       if (!state.currentChannel) return;
+      
       const currentNumber = parseInt(state.currentChannel.number);
-      const newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
-      const nextChannel = state.channels.find(c => c.number === newNumber.toString());
-      if (nextChannel) playChannel(nextChannel);
+      let newNumber = direction === 'next' ? currentNumber + 1 : currentNumber - 1;
+      
+      // Asegurarnos de que el número no sea negativo
+      newNumber = Math.max(1, newNumber);
+      
+      // Buscar el siguiente canal disponible
+      let nextChannel = state.channels.find(c => parseInt(c.number) === newNumber);
+      
+      // Si no encontramos el canal exacto, buscar el más cercano
+      if (!nextChannel) {
+        const sortedChannels = [...state.channels].sort((a, b) => parseInt(a.number) - parseInt(b.number));
+        
+        if (direction === 'next') {
+          nextChannel = sortedChannels.find(c => parseInt(c.number) > currentNumber);
+          if (!nextChannel) nextChannel = sortedChannels[0]; // Volver al primero si no hay siguiente
+        } else {
+          nextChannel = [...sortedChannels].reverse().find(c => parseInt(c.number) < currentNumber);
+          if (!nextChannel) nextChannel = sortedChannels[sortedChannels.length - 1]; // Ir al último si no hay anterior
+        }
+      }
+      
+      if (nextChannel) {
+        playChannel(nextChannel);
+      }
+    }
+
+    function toggleStickyPlayer() {
+      state.stickyPlayer = !state.stickyPlayer;
+      localStorage.setItem('stickyPlayer', state.stickyPlayer);
+      
+      const playerSection = document.getElementById('playerSection');
+      const stickyBtn = document.getElementById('toggleStickyBtn');
+      
+      if (state.stickyPlayer) {
+        playerSection.classList.add('player-section--sticky');
+        stickyBtn.innerHTML = '⛉';
+        stickyBtn.title = "Liberar reproductor";
+      } else {
+        playerSection.classList.remove('player-section--sticky');
+        stickyBtn.innerHTML = '⛊';
+        stickyBtn.title = "Fijar reproductor";
+      }
+    }
+
+    function showFavoriteModal() {
+      if (!state.currentChannel) return;
+      document.getElementById('favoriteNameInput').value = state.currentChannel.name;
+      document.getElementById('favoriteModal').classList.add('modal--active');
+    }
+
+    function hideFavoriteModal() {
+      document.getElementById('favoriteModal').classList.remove('modal--active');
+    }
+
+    function saveFavorite() {
+      const favoriteName = document.getElementById('favoriteNameInput').value.trim();
+      if (!favoriteName) {
+        alert('Por favor ingresa un nombre para el favorito');
+        return;
+      }
+
+      if (!state.currentChannel) return;
+
+      const channelNumber = state.currentChannel.number;
+      if (!state.favorites.includes(channelNumber)) {
+        state.favorites.push(channelNumber);
+        localStorage.setItem('favorites', JSON.stringify(state.favorites));
+      }
+      
+      if (state.channelHistory[channelNumber]) {
+        state.channelHistory[channelNumber].isFavorite = true;
+        localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
+      }
+      
+      document.getElementById('favoriteBtn').classList.add('control-btn--active');
+      hideFavoriteModal();
+      
+      if (state.currentFilter === 'favorites') {
+        renderResults();
+      }
+    }
+
+    function removeFavorite() {
+      if (!state.currentChannel) return;
+      
+      const channelNumber = state.currentChannel.number;
+      const index = state.favorites.indexOf(channelNumber);
+      if (index !== -1) {
+        state.favorites.splice(index, 1);
+        localStorage.setItem('favorites', JSON.stringify(state.favorites));
+      }
+      
+      if (state.channelHistory[channelNumber]) {
+        state.channelHistory[channelNumber].isFavorite = false;
+        localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
+      }
+      
+      document.getElementById('favoriteBtn').classList.remove('control-btn--active');
+      
+      if (state.currentFilter === 'favorites') {
+        renderResults();
+      }
+    }
+
+    function handleFavoriteClick() {
+      if (!state.currentChannel) return;
+
+      const isFavorite = state.favorites.includes(state.currentChannel.number) || 
+                        (state.channelHistory[state.currentChannel.number]?.isFavorite ?? false);
+      
+      if (isFavorite) {
+        if (confirm('¿Quieres eliminar este canal de favoritos?')) {
+          removeFavorite();
+        }
+      } else {
+        showFavoriteModal();
+      }
     }
 
     function applyFilter(filter) {
@@ -550,20 +737,6 @@
     function clearEmojiFilters() {
       state.activeEmojiFilters = [];
       document.querySelectorAll('.emoji-filter-btn').forEach(btn => btn.classList.remove('emoji-filter-btn--active'));
-      renderResults();
-    }
-
-    function toggleFavorite(channelNumber) {
-      const index = state.favorites.indexOf(channelNumber);
-      if (index === -1) state.favorites.push(channelNumber);
-      else state.favorites.splice(index, 1);
-      localStorage.setItem('favorites', JSON.stringify(state.favorites));
-      
-      if (state.channelHistory[channelNumber]) {
-        state.channelHistory[channelNumber].isFavorite = index === -1;
-        localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
-      }
-      
       renderResults();
     }
 
@@ -807,36 +980,56 @@
       }
     }
 
-    document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
-    document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
-    document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
-    document.getElementById('filterHistory').addEventListener('click', () => applyFilter('history'));
-    document.getElementById('clearEmojiFilters').addEventListener('click', handleClearButtonClick);
-    
-    document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn));
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
+      document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
+      document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
+      document.getElementById('filterHistory').addEventListener('click', () => applyFilter('history'));
+      document.getElementById('clearEmojiFilters').addEventListener('click', handleClearButtonClick);
+      
+      document.querySelectorAll('.emoji-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn));
+      });
+
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        state.searchTerm = e.target.value.trim();
+        renderResults();
+      });
+
+      document.getElementById('prevChannelBtn').addEventListener('click', () => navigateChannel('prev'));
+      document.getElementById('nextChannelBtn').addEventListener('click', () => navigateChannel('next'));
+      document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
+      document.getElementById('toggleStickyBtn').addEventListener('click', toggleStickyPlayer);
+      document.getElementById('favoriteBtn').addEventListener('click', handleFavoriteClick);
+      
+      document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+        document.getElementById('settingsModal').classList.remove('modal--active');
+      });
+      
+      document.getElementById('saveFavoriteBtn').addEventListener('click', saveFavorite);
+      document.getElementById('cancelFavoriteBtn').addEventListener('click', hideFavoriteModal);
+      
+      document.getElementById('internationalFilterToggle').addEventListener('change', toggleInternationalFilter);
+      document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
+      document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
+      document.getElementById('groupChannelsToggle').checked = state.groupChannels;
+      
+      // Configurar estado inicial del reproductor sticky
+      if (state.stickyPlayer) {
+        document.getElementById('playerSection').classList.add('player-section--sticky');
+        document.getElementById('toggleStickyBtn').innerHTML = '⛉';
+        document.getElementById('toggleStickyBtn').title = "Liberar reproductor";
+      } else {
+        document.getElementById('toggleStickyBtn').innerHTML = '⛊';
+        document.getElementById('toggleStickyBtn').title = "Fijar reproductor";
+      }
+
+      window.addEventListener('online', handleOnlineStatusChange);
+      window.addEventListener('offline', handleOnlineStatusChange);
+
+      scrape();
     });
-
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      state.searchTerm = e.target.value.trim();
-      renderResults();
-    });
-
-    document.getElementById('prevChannelBtn').addEventListener('click', () => navigateChannel('prev'));
-    document.getElementById('nextChannelBtn').addEventListener('click', () => navigateChannel('next'));
-    document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
-    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-      document.getElementById('settingsModal').classList.remove('modal--active');
-    });
-    document.getElementById('internationalFilterToggle').addEventListener('change', toggleInternationalFilter);
-    document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
-    document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
-    document.getElementById('groupChannelsToggle').checked = state.groupChannels;
-
-    window.addEventListener('online', handleOnlineStatusChange);
-    window.addEventListener('offline', handleOnlineStatusChange);
-
-    scrape();
   </script>
 </body>
 </html>
