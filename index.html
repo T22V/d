@@ -127,9 +127,6 @@
       transform: translateY(-3px);
       border-color: var(--primary);
     }
-    .channel-card--live {
-      border: 1px solid #dc2626;
-    }
     .channel-header {
       display: flex;
       justify-content: space-between;
@@ -974,7 +971,7 @@
       const isLive = isChannelLive(channel);
       const adjustedTime = adjustTime(channel.time);
       return `
-        <div class="channel-card ${isLive ? 'channel-card--live' : ''} ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
+        <div class="channel-card ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
             ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time">${adjustedTime}</div>` : ''}
             <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${isFavorite ? '★ ' : ''}${channel.name}</div>
