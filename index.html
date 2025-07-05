@@ -530,7 +530,6 @@
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
       groupChannels: localStorage.getItem('groupChannels') === 'true',
       isOnline: navigator.onLine,
-      stickyPlayer: localStorage.getItem('stickyPlayer') === 'true',
       filteredKeywords: [
         "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", 
         "Bulgaria", "NZ", "BR", "Morocco", "Hungary", "Tennis", "DE", "NL", 
@@ -719,19 +718,7 @@
       if (!state.currentChannel) return;
       let newNumber = direction === 'next' ? parseInt(state.currentChannel.number) + 1 : parseInt(state.currentChannel.number) - 1;
       newNumber = Math.max(1, newNumber);
-      let nextChannel = state.channels.find(c => parseInt(c.number) === newNumber);
-      if (!nextChannel) {
-        const sortedChannels = [...state.channels].sort((a, b) => parseInt(a.number) - parseInt(b.number));
-        if (direction === 'next') {
-          nextChannel = sortedChannels.find(c => parseInt(c.number) > parseInt(state.currentChannel.number));
-          if (!nextChannel) nextChannel = sortedChannels[0];
-        } else {
-          nextChannel = [...sortedChannels].reverse().find(c => parseInt(c.number) < parseInt(state.currentChannel.number));
-          if (!nextChannel) nextChannel = sortedChannels[sortedChannels.length - 1];
-        }
-      }
-      if (nextChannel) playChannel(nextChannel);
-      else playChannelByNumber(newNumber);
+      playChannelByNumber(newNumber);
     }
 
     function toggleStickyPlayer() {
@@ -817,6 +804,8 @@
 
     function clearEmojiFilters() {
       state.activeEmojiFilters = [];
+      document.getElementById('searchInput').value = '';
+      state.searchTerm = '';
       document.querySelectorAll('.emoji-filter-btn').forEach(btn => btn.classList.remove('emoji-filter-btn--active'));
       renderResults();
     }
@@ -863,9 +852,23 @@
         }
         if (state.activeEmojiFilters.length > 0) {
           const matchesFilter = state.activeEmojiFilters.some(filter => {
-            if (filter === "Tenis") return channel.sport.includes("Tenis") || channel.sport.includes("Tennis");
-            if (filter === "Spain ES Movistar M+") return channel.name.includes('Spain') || channel.name.includes(' ES ') || channel.name.includes('Movistar') || channel.name.includes('M+');
-            return channel.sport.includes(filter);
+            if (filter === "Tenis") {
+              return channel.sport.includes("Tenis") || channel.sport.includes("Tennis") || 
+                     channel.event.includes("Tenis") || channel.event.includes("Tennis") ||
+                     channel.name.includes("Tenis") || channel.name.includes("Tennis");
+            }
+            if (filter === "Formula 1") {
+              return channel.sport.includes("Formula 1") || channel.sport.includes("F1") || 
+                     channel.event.includes("Formula 1") || channel.event.includes("F1") ||
+                     channel.name.includes("Formula 1") || channel.name.includes("F1") ||
+                     channel.event.includes("Gran Premio") || channel.event.includes("Grand Prix");
+            }
+            if (filter === "Spain ES Movistar M+") {
+              return channel.name.includes('Spain') || channel.name.includes(' ES ') || 
+                     channel.name.includes('Movistar') || channel.name.includes('Espana') || 
+                     channel.name.includes('M+');
+            }
+            return channel.sport.includes(filter) || channel.event.includes(filter) || channel.name.includes(filter);
           });
           if (!matchesFilter) return false;
         }
