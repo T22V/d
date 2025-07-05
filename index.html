@@ -141,6 +141,10 @@
       padding: 0 0.5rem;
       text-align: center;
       font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
     }
     .channel-number {
       color: var(--primary);
@@ -153,7 +157,7 @@
       align-items: center;
       gap: 5px;
     }
-    .channel-time--live::before {
+    .channel-time--live::before, .channel-name--live::before {
       content: "";
       display: inline-block;
       width: 6px;
@@ -677,6 +681,7 @@
     }
 
     function isChannelLive(channel) {
+      if (state.currentFilter === 'history') return false;
       if (!channel.time || channel.time === 'LIVE') return true;
       
       const now = new Date();
@@ -951,7 +956,7 @@
         groupElement.innerHTML = `
           <div class="channel-group__header">
             <div class="channel-group__title">
-              <span class="channel-time ${time === 'LIVE' ? 'channel-time--live' : ''}">${time}</span>
+              ${state.currentFilter !== 'history' ? `<span class="channel-time ${time === 'LIVE' ? 'channel-time--live' : ''}">${time}</span>` : `<span class="channel-time">${time}</span>`}
               ${event}
             </div>
             <div class="channel-group__sport">${translateSport(sport)}</div>
@@ -971,8 +976,8 @@
       return `
         <div class="channel-card ${isLive ? 'channel-card--live' : ''} ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
-            ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time ${isLive ? 'channel-time--live' : ''}">${adjustedTime}</div>` : ''}
-            <div class="channel-name">${isFavorite ? '★ ' : ''}${channel.name}</div>
+            ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time">${adjustedTime}</div>` : ''}
+            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${isFavorite ? '★ ' : ''}${channel.name}</div>
             <div class="channel-number">${channel.number}</div>
           </div>
           ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-event">${channel.event}</div>` : ''}
