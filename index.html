@@ -16,6 +16,13 @@
       --radius-md: 10px;
       --radius-sm: 6px;
     }
+    body.dark-mode {
+      --bg-light: #1e293b;
+      --card-bg: #334155;
+      --text: #f8fafc;
+      --border-color: #475569;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    }
     body {
       background: var(--bg-light);
       color: var(--text);
@@ -23,6 +30,7 @@
       line-height: 1.6;
       margin: 0;
       padding: 0;
+      transition: background 0.3s, color 0.3s;
     }
     .main-container {
       max-width: 1400px;
@@ -500,6 +508,13 @@
     <div class="modal__content">
       <h3 class="modal__title">Ajustes</h3>
       <div class="settings-item">
+        <span class="settings-label">Modo oscuro</span>
+        <label class="settings-switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="settings-slider"></span>
+        </label>
+      </div>
+      <div class="settings-item">
         <span class="settings-label">Filtrar canales internacionales</span>
         <label class="settings-switch">
           <input type="checkbox" id="internationalFilterToggle">
@@ -550,6 +565,7 @@
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
       groupChannels: localStorage.getItem('groupChannels') === 'true',
       sortByTime: localStorage.getItem('sortByTime') === 'true',
+      darkMode: localStorage.getItem('darkMode') === 'true',
       isOnline: navigator.onLine,
       filteredKeywords: [
         "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", 
@@ -576,6 +592,13 @@
       'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
       'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
     };
+
+    function toggleDarkMode() {
+      state.darkMode = !state.darkMode;
+      localStorage.setItem('darkMode', state.darkMode);
+      document.body.classList.toggle('dark-mode', state.darkMode);
+      document.getElementById('darkModeToggle').checked = state.darkMode;
+    }
 
     function translateSport(sport) {
       return sportTranslations[sport] || sport;
@@ -974,7 +997,7 @@
         <div class="channel-card ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
             ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time">${adjustedTime}</div>` : ''}
-            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${isFavorite ? '★ ' : ''}${channel.name}</div>
+            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${channel.name}</div>
             <div class="channel-number">${channel.number}</div>
           </div>
           ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-event">${channel.event}</div>` : ''}
@@ -1089,6 +1112,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.toggle('dark-mode', state.darkMode);
       document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
       document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
       document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
@@ -1107,6 +1131,8 @@
       document.getElementById('closeSettingsBtn').addEventListener('click', () => document.getElementById('settingsModal').classList.remove('modal--active'));
       document.getElementById('saveFavoriteBtn').addEventListener('click', saveFavorite);
       document.getElementById('cancelFavoriteBtn').addEventListener('click', hideFavoriteModal);
+      document.getElementById('darkModeToggle').addEventListener('change', toggleDarkMode);
+      document.getElementById('darkModeToggle').checked = state.darkMode;
       document.getElementById('internationalFilterToggle').addEventListener('change', toggleInternationalFilter);
       document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
       document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
