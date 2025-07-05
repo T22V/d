@@ -127,6 +127,9 @@
       transform: translateY(-3px);
       border-color: var(--primary);
     }
+    .channel-card--live {
+      border: 1px solid #dc2626;
+    }
     .channel-header {
       display: flex;
       justify-content: space-between;
@@ -577,6 +580,102 @@
       return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
+    function getEventDuration(channel) {
+      const sport = channel.sport?.toLowerCase() || '';
+      const event = (channel.event?.toLowerCase() || '').replace(/[^\w\sáéíóúüñ]/gi, '');
+      const name = channel.name.toLowerCase();
+
+      if (/(fútbol|soccer|football)/.test(sport)) {
+        if (/amistoso|friendly/.test(event)) return 115;
+        if (/champions|europa league|libertadores/.test(event)) return 150;
+        if (/mundial|world cup|eurocopa|copa américa/.test(event)) return 135;
+        if (/partido|vs\.|vs |contra/.test(event)) return 105;
+        return 120;
+      } else if (/(baloncesto|basketball)/.test(sport)) {
+        if (/nba/.test(name)) return 150;
+        if (/euroleague|eurocup/.test(name)) return 130;
+        if (/acb|liga endesa/.test(name)) return 120;
+        return 100;
+      } else if (/(béisbol|baseball)/.test(sport)) {
+        if (/mlb|grandes ligas/.test(name)) return 210;
+        return 180;
+      } else if (/(balonmano|handball)/.test(sport)) {
+        return 90;
+      } else if (/(rugby)/.test(sport)) {
+        return 120;
+      } else if (/(hockey|hielo)/.test(sport)) {
+        if (/nhl/.test(name)) return 150;
+        return 120;
+      } else if (/(tenis|tennis)/.test(sport)) {
+        if (/grand slam|wimbledon|open|final/.test(event)) return 300;
+        if (/doble|dobles|double/.test(event)) return 180;
+        return 150;
+      } else if (/(golf)/.test(sport)) {
+        if (/final|última ronda|last round/.test(event)) return 360;
+        return 480;
+      } else if (/(motorsport|fórmula|formula)/.test(sport)) {
+        if (/f1|gran premio|grand prix/.test(event)) return 180;
+        if (/moto gp|motogp/.test(event)) return 120;
+        if (/24h|24 horas|le mans/.test(event)) return 1440;
+        return 240;
+      } else if (/(ciclismo|cycling)/.test(sport)) {
+        if (/etapa|stage/.test(event)) return 300;
+        if (/clásica|monumento/.test(event)) return 240;
+        if (/contrarreloj|time trial/.test(event)) return 180;
+        return 360;
+      } else if (/(boxeo|boxing)/.test(sport)) {
+        if (/main event|combate principal/.test(event)) return 60;
+        if (/pelea|fight|preliminar/.test(event)) return 30;
+        return 180;
+      } else if (/(mma|ufc)/.test(sport)) {
+        if (/main event|combate principal/.test(event)) return 75;
+        if (/co-main|coestelar/.test(event)) return 50;
+        if (/pelea|fight|preliminar/.test(event)) return 15;
+        return 240;
+      } else if (/(esports|videojuegos)/.test(sport)) {
+        if (/torneo|tournament/.test(event)) return 240;
+        if (/final|championship/.test(event)) return 120;
+        if (/partida|match|mejor de/.test(event)) return 90;
+        return 180;
+      } else if (/(atletismo|athletics)/.test(sport)) {
+        if (/maratón|marathon/.test(event)) return 480;
+        if (/decatlón|heptatlón/.test(event)) return 360;
+        return 120;
+      } else if (/(natación|swimming)/.test(sport)) {
+        return 120;
+      } else if (/(tv shows|tv show)/.test(sport)) {
+        return 60;
+      } else if (/(reality)/.test(sport)) {
+        return 90;
+      } else if (/(documental|documentary)/.test(sport)) {
+        return 120;
+      } else if (/(especial|special)/.test(sport)) {
+        return 180;
+      }
+      
+      return 120;
+    }
+
+    function isChannelLive(channel) {
+      if (!channel.time || channel.time === 'LIVE') return true;
+      
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      const currentTimeInMinutes = currentHours * 60 + currentMinutes;
+      
+      const [eventHours, eventMinutes] = channel.time.split(':').map(Number);
+      const eventTimeInMinutes = eventHours * 60 + eventMinutes;
+      
+      const duration = getEventDuration(channel);
+      const margin = 15; // ±15 minutos de margen
+      
+      const startTime = eventTimeInMinutes - margin;
+      const endTime = eventTimeInMinutes + duration + margin;
+      
+      return currentTimeInMinutes >= startTime && currentTimeInMinutes <= endTime;
+    }
+
     function updateChannelHistory(channel) {
       const historyEntry = state.channelHistory[channel.number] || { names: [], isFavorite: false };
       if (!historyEntry.names.includes(channel.name)) historyEntry.names.push(channel.name);
@@ -597,7 +696,6 @@
     }
 
     function playChannelByNumber(number) {
-      // Crear un objeto de canal mínimo con solo el número
       const channel = {
         number: number,
         name: `Canal ${number}`,
@@ -633,7 +731,7 @@
         }
       }
       if (nextChannel) playChannel(nextChannel);
-      else playChannelByNumber(newNumber); // Reproducir aunque no exista en la lista
+      else playChannelByNumber(newNumber);
     }
 
     function toggleStickyPlayer() {
@@ -751,7 +849,7 @@
 
       return (state.isOnline ? state.channels : []).filter(channel => {
         if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
-        if (state.currentFilter === 'live' && !channel.time) return false;
+        if (state.currentFilter === 'live' && !isChannelLive(channel)) return false;
         if (state.searchTerm) {
           const term = state.searchTerm.toLowerCase();
           if (/^#?\d+$/.test(term)) {
@@ -818,10 +916,10 @@
 
     function createChannelCard(channel) {
       const isFavorite = state.favorites.includes(channel.number) || (state.channelHistory[channel.number]?.isFavorite ?? false);
-      const isLive = channel.time?.includes('LIVE');
+      const isLive = isChannelLive(channel);
       const adjustedTime = adjustTime(channel.time);
       return `
-        <div class="channel-card" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
+        <div class="channel-card ${isLive ? 'channel-card--live' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
             ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time ${isLive ? 'channel-time--live' : ''}">${adjustedTime}</div>` : ''}
             <div class="channel-name">${isFavorite ? '★ ' : ''}${channel.name}</div>
@@ -837,7 +935,6 @@
       const value = document.getElementById('searchInput').value.trim();
       state.searchTerm = value;
       
-      // Solo actualizar resultados si no es un número (canal)
       if (!/^#?\d+$/.test(value)) {
         renderResults();
       }
@@ -847,7 +944,6 @@
       const value = document.getElementById('searchInput').value.trim();
       state.searchTerm = value;
       
-      // Si es un número de canal, reproducirlo aunque no exista en la lista
       if (/^#?\d+$/.test(value)) {
         const channelNumber = value.replace('#', '');
         const channel = state.channels.find(c => c.number === channelNumber);
