@@ -596,6 +596,18 @@
       if (state.isOnline) document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
     }
 
+    function playChannelByNumber(number) {
+      // Crear un objeto de canal mínimo con solo el número
+      const channel = {
+        number: number,
+        name: `Canal ${number}`,
+        time: '',
+        event: '',
+        sport: ''
+      };
+      playChannel(channel);
+    }
+
     function closePlayer() {
       document.getElementById('playerContainer').classList.remove('player-container--active');
       document.getElementById('playerControls').classList.remove('player-controls--active');
@@ -621,6 +633,7 @@
         }
       }
       if (nextChannel) playChannel(nextChannel);
+      else playChannelByNumber(newNumber); // Reproducir aunque no exista en la lista
     }
 
     function toggleStickyPlayer() {
@@ -820,6 +833,35 @@
       `;
     }
 
+    function handleSearchInput() {
+      const value = document.getElementById('searchInput').value.trim();
+      state.searchTerm = value;
+      
+      // Solo actualizar resultados si no es un número (canal)
+      if (!/^#?\d+$/.test(value)) {
+        renderResults();
+      }
+    }
+
+    function handleSearchEnter() {
+      const value = document.getElementById('searchInput').value.trim();
+      state.searchTerm = value;
+      
+      // Si es un número de canal, reproducirlo aunque no exista en la lista
+      if (/^#?\d+$/.test(value)) {
+        const channelNumber = value.replace('#', '');
+        const channel = state.channels.find(c => c.number === channelNumber);
+        if (channel) {
+          playChannel(channel);
+        } else {
+          playChannelByNumber(channelNumber);
+        }
+        return;
+      }
+      
+      renderResults();
+    }
+
     async function scrape() {
       try {
         if (!state.isOnline) return renderResults();
@@ -905,9 +947,9 @@
       document.getElementById('filterHistory').addEventListener('click', () => applyFilter('history'));
       document.getElementById('clearEmojiFilters').addEventListener('click', handleClearButtonClick);
       document.querySelectorAll('.emoji-filter-btn').forEach(btn => btn.addEventListener('click', () => toggleEmojiFilter(btn.dataset.filter, btn)));
-      document.getElementById('searchInput').addEventListener('input', (e) => {
-        state.searchTerm = e.target.value.trim();
-        renderResults();
+      document.getElementById('searchInput').addEventListener('input', handleSearchInput);
+      document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSearchEnter();
       });
       document.getElementById('prevChannelBtn').addEventListener('click', () => navigateChannel('prev'));
       document.getElementById('nextChannelBtn').addEventListener('click', () => navigateChannel('next'));
