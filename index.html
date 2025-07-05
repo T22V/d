@@ -877,16 +877,31 @@
       renderResults();
     }
 
+    function filterHistoryChannels() {
+      const historyChannels = Object.entries(state.channelHistory).map(([number, data]) => ({
+        number,
+        name: data.names[0] || `Canal ${number}`,
+        time: '',
+        event: '',
+        sport: '',
+        isFavorite: data.isFavorite || false
+      }));
+
+      if (!state.searchTerm) return historyChannels;
+
+      const term = state.searchTerm.toLowerCase().trim();
+
+      return historyChannels.filter(channel => {
+        if (/^#?\d+$/.test(term)) {
+          return channel.number === term.replace('#', '');
+        }
+        return channel.name.toLowerCase().includes(term);
+      });
+    }
+
     function filterChannels() {
       if (state.currentFilter === 'history') {
-        return Object.keys(state.channelHistory).map(number => ({
-          number,
-          name: state.channelHistory[number].names[0],
-          time: '',
-          event: '',
-          sport: '',
-          isFavorite: state.channelHistory[number].isFavorite
-        }));
+        return filterHistoryChannels();
       }
 
       let filteredChannels = (state.isOnline ? state.channels : []).filter(channel => {
@@ -1007,12 +1022,8 @@
     }
 
     function handleSearchInput() {
-      const value = document.getElementById('searchInput').value.trim();
-      state.searchTerm = value;
-      
-      if (!/^#?\d+$/.test(value)) {
-        renderResults();
-      }
+      state.searchTerm = document.getElementById('searchInput').value.trim();
+      renderResults();
     }
 
     function handleSearchEnter() {
@@ -1021,6 +1032,20 @@
       
       if (/^#?\d+$/.test(value)) {
         const channelNumber = value.replace('#', '');
+        
+        if (state.currentFilter === 'history') {
+          if (state.channelHistory[channelNumber]) {
+            playChannel({
+              number: channelNumber,
+              name: state.channelHistory[channelNumber].names[0],
+              time: '',
+              event: '',
+              sport: ''
+            });
+          }
+          return;
+        }
+        
         const channel = state.channels.find(c => c.number === channelNumber);
         if (channel) {
           playChannel(channel);
