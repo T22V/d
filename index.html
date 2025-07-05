@@ -182,7 +182,6 @@
       height: calc(57vw + 40px);
       max-height: 85vh;
       display: none;
-      margin-bottom: 1rem;
     }
     .player-container--active {
       display: block;
@@ -196,7 +195,6 @@
       display: none;
       gap: 10px;
       justify-content: center;
-      margin-bottom: 1rem;
       padding: 10px;
       background: var(--card-bg);
       border-radius: var(--radius-md);
@@ -391,8 +389,6 @@
       top: 0;
       z-index: 100;
       background: var(--bg-light);
-      padding: 1rem 0;
-      margin-bottom: 1rem;
     }
     @keyframes pulse {
       0% { opacity: 1; }
@@ -500,6 +496,13 @@
           <span class="settings-slider"></span>
         </label>
       </div>
+      <div class="settings-item">
+        <span class="settings-label">Ordenar por hora</span>
+        <label class="settings-switch">
+          <input type="checkbox" id="sortByTimeToggle">
+          <span class="settings-slider"></span>
+        </label>
+      </div>
       <div class="modal__actions">
         <button class="modal__btn modal__btn--primary" id="closeSettingsBtn">Cerrar</button>
       </div>
@@ -529,6 +532,7 @@
       lastClearButtonClickTime: 0,
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
       groupChannels: localStorage.getItem('groupChannels') === 'true',
+      sortByTime: localStorage.getItem('sortByTime') === 'true',
       isOnline: navigator.onLine,
       filteredKeywords: [
         "Cricket", "Russia", "France", "Golf", "IT", "PL", "Slovakia", "Sweden", 
@@ -575,7 +579,8 @@
     function adjustTime(time) {
       if (!time || time === 'LIVE') return time;
       const [hours, minutes] = time.split(':').map(Number);
-      const adjustedHours = (hours + 1) % 24;
+      let adjustedHours = (hours + 1) % 24;
+      if (adjustedHours < 6) adjustedHours += 24;
       return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
@@ -667,7 +672,7 @@
       const eventTimeInMinutes = eventHours * 60 + eventMinutes;
       
       const duration = getEventDuration(channel);
-      const margin = 15; // ±15 minutos de margen
+      const margin = 15;
       
       const startTime = eventTimeInMinutes - margin;
       const endTime = eventTimeInMinutes + duration + margin;
@@ -824,6 +829,13 @@
       renderResults();
     }
 
+    function toggleSortByTime() {
+      state.sortByTime = !state.sortByTime;
+      localStorage.setItem('sortByTime', state.sortByTime);
+      document.getElementById('sortByTimeToggle').checked = state.sortByTime;
+      renderResults();
+    }
+
     function filterChannels() {
       if (state.currentFilter === 'history') {
         return Object.keys(state.channelHistory).map(number => ({
@@ -836,7 +848,7 @@
         }));
       }
 
-      return (state.isOnline ? state.channels : []).filter(channel => {
+      let filteredChannels = (state.isOnline ? state.channels : []).filter(channel => {
         if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
         if (state.currentFilter === 'live' && !isChannelLive(channel)) return false;
         if (state.searchTerm) {
@@ -874,6 +886,25 @@
         }
         return true;
       });
+
+      if (state.currentFilter === 'live' || (state.sortByTime && state.currentFilter === 'all')) {
+        filteredChannels.sort((a, b) => {
+          if (a.time === 'LIVE' && b.time !== 'LIVE') return -1;
+          if (a.time !== 'LIVE' && b.time === 'LIVE') return 1;
+          if (a.time === 'LIVE' && b.time === 'LIVE') return 0;
+          
+          const timeA = a.time ? a.time.split(':').map(Number) : [23, 59];
+          const timeB = b.time ? b.time.split(':').map(Number) : [23, 59];
+          
+          const adjustedHoursA = timeA[0] < 6 ? timeA[0] + 24 : timeA[0];
+          const adjustedHoursB = timeB[0] < 6 ? timeB[0] + 24 : timeB[0];
+          
+          if (adjustedHoursA !== adjustedHoursB) return adjustedHoursA - adjustedHoursB;
+          return timeA[1] - timeB[1];
+        });
+      }
+
+      return filteredChannels;
     }
 
     function renderResults() {
@@ -1062,6 +1093,8 @@
       document.getElementById('internationalFilterToggle').checked = state.internationalFilter;
       document.getElementById('groupChannelsToggle').addEventListener('change', toggleGroupChannels);
       document.getElementById('groupChannelsToggle').checked = state.groupChannels;
+      document.getElementById('sortByTimeToggle').addEventListener('change', toggleSortByTime);
+      document.getElementById('sortByTimeToggle').checked = state.sortByTime;
       if (state.stickyPlayer) {
         document.getElementById('playerSection').classList.add('player-section--sticky');
         document.getElementById('toggleStickyBtn').innerHTML = '⛉';
