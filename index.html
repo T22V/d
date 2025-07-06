@@ -705,9 +705,18 @@
     };
 
     const sportTranslations = {
-      'Football': 'Fútbol', 'Soccer': 'Fútbol', 'Basketball': 'Baloncesto', 'Tennis': 'Tenis',
-      'Baseball': 'Béisbol', 'Boxing': 'Boxeo', 'Handball': 'Balonmano', 'Cycling': 'Ciclismo',
-      'Swimming': 'Natación', 'Athletics': 'Atletismo', 'Darts': 'Dardos'
+      'Football': 'Fútbol', 'Soccer': 'Fútbol', 'Futbol': 'Fútbol', 'Foot': 'Fútbol',
+      'Basketball': 'Baloncesto', 'Basket': 'Baloncesto', 'Baloncesto': 'Baloncesto',
+      'Boxing': 'Boxeo', 'Boxeo': 'Boxeo', 'Box': 'Boxeo',
+      'Tennis': 'Tenis', 'Tenis': 'Tenis',
+      'Baseball': 'Béisbol', 'Beisbol': 'Béisbol',
+      'Handball': 'Balonmano', 'Balonmano': 'Balonmano',
+      'Cycling': 'Ciclismo', 'Ciclismo': 'Ciclismo',
+      'Swimming': 'Natación', 'Natacion': 'Natación',
+      'Athletics': 'Atletismo', 'Atletismo': 'Atletismo',
+      'Darts': 'Dardos', 'Dardos': 'Dardos',
+      'MotorSport': 'Motorsport', 'Motorsport': 'Motorsport',
+      'Formula 1': 'Fórmula 1', 'F1': 'Fórmula 1', 'Formula1': 'Fórmula 1'
     };
 
     const dayTranslations = {
@@ -1040,7 +1049,15 @@
           if (/^#?\d+$/.test(term)) {
             const channelNumber = term.replace('#', '');
             if (channel.number !== channelNumber) return false;
-          } else if (!channel.name.toLowerCase().includes(term) && !channel.event.toLowerCase().includes(term) && !channel.sport.toLowerCase().includes(term)) return false;
+          } else {
+            const translatedSport = translateSport(channel.sport).toLowerCase();
+            if (!channel.name.toLowerCase().includes(term) && 
+                !channel.event.toLowerCase().includes(term) && 
+                !channel.sport.toLowerCase().includes(term) &&
+                !translatedSport.includes(term)) {
+              return false;
+            }
+          }
         }
         if (state.internationalFilter) {
           const channelName = channel.name;
@@ -1048,23 +1065,35 @@
         }
         if (state.activeEmojiFilters.length > 0) {
           const matchesFilter = state.activeEmojiFilters.some(filter => {
+            if (channel.sport.includes(filter) || channel.event.includes(filter) || channel.name.includes(filter)) {
+              return true;
+            }
+            
+            const translatedSport = translateSport(channel.sport);
+            if (translatedSport.includes(filter)) {
+              return true;
+            }
+            
+            if (filter === "Fútbol") {
+              return /fútbol|futbol|football|soccer|foot/i.test(channel.sport + channel.event + channel.name);
+            }
+            if (filter === "Baloncesto") {
+              return /baloncesto|basketball|basket/i.test(channel.sport + channel.event + channel.name);
+            }
+            if (filter === "Boxeo") {
+              return /boxeo|boxing|box/i.test(channel.sport + channel.event + channel.name);
+            }
             if (filter === "Tenis") {
-              return channel.sport.includes("Tenis") || channel.sport.includes("Tennis") || 
-                     channel.event.includes("Tenis") || channel.event.includes("Tennis") ||
-                     channel.name.includes("Tenis") || channel.name.includes("Tennis");
+              return /tenis|tennis/i.test(channel.sport + channel.event + channel.name);
             }
             if (filter === "Formula 1") {
-              return channel.sport.includes("Formula 1") || channel.sport.includes("F1") || 
-                     channel.event.includes("Formula 1") || channel.event.includes("F1") ||
-                     channel.name.includes("Formula 1") || channel.name.includes("F1") ||
-                     channel.event.includes("Gran Premio") || channel.event.includes("Grand Prix");
+              return /formula 1|fórmula 1|f1|grand prix|gran premio/i.test(channel.sport + channel.event + channel.name);
             }
             if (filter === "Spain ES Movistar M+") {
-              return channel.name.includes('Spain') || channel.name.includes(' ES') || 
-                     channel.name.includes('Movistar') || channel.name.includes('Espana') || 
-                     channel.name.includes('M+');
+              return /spain|españa|espana|es |movistar|m\+/i.test(channel.name);
             }
-            return channel.sport.includes(filter) || channel.event.includes(filter) || channel.name.includes(filter);
+            
+            return false;
           });
           if (!matchesFilter) return false;
         }
