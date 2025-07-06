@@ -209,6 +209,7 @@
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-sm);
       position: relative;
+      margin-bottom: 10px;
     }
     .player-controls--active {
       display: flex;
@@ -1079,7 +1080,7 @@
         }
         if (state.activeEmojiFilters.length > 0) {
           const matchesFilter = state.activeEmojiFilters.some(filter => {
-            if (channel.sport.includes(filter) || channel.event.includes(filter) || channel.name.includes(filter)) {
+            if (channel.sport.includes(filter) || channel.event.includes(filter)) {
               return true;
             }
             
@@ -1089,19 +1090,19 @@
             }
             
             if (filter === "Fútbol") {
-              return /fútbol|futbol|football|soccer|foot/i.test(channel.sport + channel.event + channel.name);
+              return /fútbol|futbol|football|soccer|foot/i.test(channel.sport + channel.event);
             }
             if (filter === "Baloncesto") {
-              return /baloncesto|basketball|basket/i.test(channel.sport + channel.event + channel.name);
+              return /baloncesto|basketball|basket/i.test(channel.sport + channel.event);
             }
             if (filter === "Boxeo") {
-              return /boxeo|boxing|box/i.test(channel.sport + channel.event + channel.name);
+              return /boxeo|boxing|box/i.test(channel.sport + channel.event);
             }
             if (filter === "Tenis") {
-              return /tenis|tennis/i.test(channel.sport + channel.event + channel.name);
+              return /tenis|tennis/i.test(channel.sport + channel.event);
             }
             if (filter === "Formula 1") {
-              return /formula 1|fórmula 1|f1|grand prix|gran premio/i.test(channel.sport + channel.event + channel.name);
+              return /formula 1|fórmula 1|f1|grand prix|gran premio/i.test(channel.sport + channel.event);
             }
             if (filter === "Spain ES Movistar M+") {
               return /spain|españa|espana|es |movistar|m\+/i.test(channel.name);
