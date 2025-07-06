@@ -497,10 +497,6 @@
       border-radius: var(--radius-sm);
       margin-bottom: 1rem;
     }
-    .loading-text {
-      font-size: 0.9rem;
-      color: var(--text);
-    }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -593,7 +589,6 @@
     <div id="updateNotification" class="update-notification"></div>
     <div id="loadingIndicator" class="loading-container" style="display: none;">
       <div class="loading-spinner"></div>
-      <div class="loading-text">Actualizando canales...</div>
     </div>
     <div class="channels-grid" id="results"></div>
   </div>
@@ -702,7 +697,7 @@
       currentFilter: 'all',
       searchTerm: '',
       activeEmojiFilters: [],
-      favorites: JSON.parse(localStorage.getItem('favorites')) || [],
+      favorites: JSON.parse(localStorage.getItem('favorites')) || {},
       channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {},
       currentChannel: null,
       baseDomain: 'daddylivehd1.my',
@@ -879,7 +874,7 @@
     function updateChannelHistory(channel) {
       const historyEntry = state.channelHistory[channel.number] || { names: [], isFavorite: false };
       if (!historyEntry.names.includes(channel.name)) historyEntry.names.push(channel.name);
-      historyEntry.isFavorite = state.favorites.includes(channel.number);
+      historyEntry.isFavorite = state.favorites[channel.number] !== undefined;
       state.channelHistory[channel.number] = historyEntry;
       localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
     }
@@ -891,7 +886,7 @@
       document.getElementById('playerControls').classList.add('player-controls--active');
       document.getElementById('channelInfo').textContent = channel.name;
       document.getElementById('channelNumberDisplay').textContent = `CH-${channel.number}`;
-      document.getElementById('favoriteBtn').classList.toggle('control-btn--active', state.favorites.includes(channel.number) || (state.channelHistory[channel.number]?.isFavorite ?? false));
+      document.getElementById('favoriteBtn').classList.toggle('control-btn--active', state.favorites[channel.number] !== undefined || (state.channelHistory[channel.number]?.isFavorite ?? false));
       if (state.isOnline) document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
     }
 
@@ -953,10 +948,11 @@
       if (!favoriteName) return alert('Por favor ingresa un nombre para el favorito');
       if (!state.currentChannel) return;
       const channelNumber = state.currentChannel.number;
-      if (!state.favorites.includes(channelNumber)) state.favorites.push(channelNumber);
+      state.favorites[channelNumber] = favoriteName;
       localStorage.setItem('favorites', JSON.stringify(state.favorites));
       if (state.channelHistory[channelNumber]) {
         state.channelHistory[channelNumber].isFavorite = true;
+        state.channelHistory[channelNumber].customName = favoriteName;
         localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
       }
       document.getElementById('favoriteBtn').classList.add('control-btn--active');
@@ -967,11 +963,11 @@
     function removeFavorite() {
       if (!state.currentChannel) return;
       const channelNumber = state.currentChannel.number;
-      const index = state.favorites.indexOf(channelNumber);
-      if (index !== -1) state.favorites.splice(index, 1);
+      delete state.favorites[channelNumber];
       localStorage.setItem('favorites', JSON.stringify(state.favorites));
       if (state.channelHistory[channelNumber]) {
         state.channelHistory[channelNumber].isFavorite = false;
+        delete state.channelHistory[channelNumber].customName;
         localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
       }
       document.getElementById('favoriteBtn').classList.remove('control-btn--active');
@@ -980,7 +976,7 @@
 
     function handleFavoriteClick() {
       if (!state.currentChannel) return;
-      const isFavorite = state.favorites.includes(state.currentChannel.number) || (state.channelHistory[state.currentChannel.number]?.isFavorite ?? false);
+      const isFavorite = state.favorites[state.currentChannel.number] !== undefined || (state.channelHistory[state.currentChannel.number]?.isFavorite ?? false);
       if (isFavorite) confirm('¿Quieres eliminar este canal de favoritos?') && removeFavorite();
       else showFavoriteModal();
     }
@@ -1035,7 +1031,7 @@
     function filterHistoryChannels() {
       const historyChannels = Object.entries(state.channelHistory).map(([number, data]) => ({
         number,
-        name: data.names[0] || `Canal ${number}`,
+        name: data.customName || data.names[0] || `Canal ${number}`,
         time: '',
         event: '',
         sport: '',
@@ -1060,7 +1056,7 @@
       }
 
       let filteredChannels = (state.isOnline ? state.channels : []).filter(channel => {
-        if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
+        if (state.currentFilter === 'favorites' && !state.favorites[channel.number]) return false;
         if (state.currentFilter === 'live' && !isChannelLive(channel)) return false;
         if (state.searchTerm) {
           const term = state.searchTerm.toLowerCase();
@@ -1190,15 +1186,16 @@
     }
 
     function createChannelCard(channel) {
-      const isFavorite = state.favorites.includes(channel.number) || (state.channelHistory[channel.number]?.isFavorite ?? false);
+      const isFavorite = state.favorites[channel.number] !== undefined || (state.channelHistory[channel.number]?.isFavorite ?? false);
       const isLive = isChannelLive(channel);
       const adjustedTime = adjustTime(channel.time);
+      const displayName = state.channelHistory[channel.number]?.customName || channel.name;
       
       return `
         <div class="channel-card ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
             ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time">${adjustedTime}</div>` : ''}
-            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${channel.name}</div>
+            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${displayName}</div>
             <div class="channel-number">${channel.number}</div>
           </div>
           ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-event">${channel.event}</div>` : ''}
@@ -1223,7 +1220,7 @@
           if (state.channelHistory[channelNumber]) {
             playChannel({
               number: channelNumber,
-              name: state.channelHistory[channelNumber].names[0],
+              name: state.channelHistory[channelNumber].customName || state.channelHistory[channelNumber].names[0],
               time: '',
               event: '',
               sport: ''
@@ -1248,7 +1245,6 @@
       const loadingIndicator = document.getElementById('loadingIndicator');
       loadingIndicator.style.display = 'flex';
       
-      // Mostrar datos en caché inmediatamente si existen
       if (state.channels.length > 0) {
         renderResults();
       }
@@ -1385,12 +1381,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.toggle('dark-mode', state.darkMode);
       
-      // Mostrar datos en caché inmediatamente si existen
       if (state.channels.length > 0 || Object.keys(state.channelHistory).length > 0) {
         renderResults();
       }
       
-      // Configurar event listeners
       document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
       document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
       document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
@@ -1437,7 +1431,6 @@
       window.addEventListener('online', handleOnlineStatusChange);
       window.addEventListener('offline', handleOnlineStatusChange);
       
-      // Iniciar scraping
       scrape();
     });
   </script>
