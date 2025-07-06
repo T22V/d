@@ -487,6 +487,20 @@
       animation: spin 1s ease-in-out infinite;
       margin: 20px auto;
     }
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: var(--card-bg);
+      border-radius: var(--radius-sm);
+      margin-bottom: 1rem;
+    }
+    .loading-text {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -577,7 +591,11 @@
     </div>
     <div id="offlineMessage" class="offline-message" style="display: none;">Modo offline: mostrando canales del historial</div>
     <div id="updateNotification" class="update-notification"></div>
-    <div class="channels-grid" id="results"><div class="loading-spinner"></div></div>
+    <div id="loadingIndicator" class="loading-container" style="display: none;">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Actualizando canales...</div>
+    </div>
+    <div class="channels-grid" id="results"></div>
   </div>
   <div class="modal" id="settingsModal">
     <div class="modal__content">
@@ -1124,9 +1142,17 @@
       const filteredChannels = filterChannels();
       const resultsDiv = document.getElementById('results');
       document.getElementById('offlineMessage').style.display = state.isOnline ? 'none' : 'block';
-      if (filteredChannels.length === 0) return resultsDiv.innerHTML = '<p>No se encontraron canales</p>';
-      if (state.groupChannels && state.currentFilter !== 'history') renderGroupedResults(filteredChannels, resultsDiv);
-      else renderUngroupedResults(filteredChannels, resultsDiv);
+      
+      if (filteredChannels.length === 0) {
+        resultsDiv.innerHTML = '<p>No se encontraron canales</p>';
+        return;
+      }
+      
+      if (state.groupChannels && state.currentFilter !== 'history') {
+        renderGroupedResults(filteredChannels, resultsDiv);
+      } else {
+        renderUngroupedResults(filteredChannels, resultsDiv);
+      }
     }
 
     function renderUngroupedResults(channels, container) {
@@ -1140,7 +1166,9 @@
         if (!groups[groupKey]) groups[groupKey] = [];
         groups[groupKey].push(channel);
       });
+      
       container.innerHTML = '';
+      
       Object.entries(groups).forEach(([groupKey, groupChannels]) => {
         const [time, event, sport] = groupKey.split('|');
         const groupElement = document.createElement('div');
@@ -1165,6 +1193,7 @@
       const isFavorite = state.favorites.includes(channel.number) || (state.channelHistory[channel.number]?.isFavorite ?? false);
       const isLive = isChannelLive(channel);
       const adjustedTime = adjustTime(channel.time);
+      
       return `
         <div class="channel-card ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
@@ -1216,13 +1245,27 @@
     }
 
     async function scrape() {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      loadingIndicator.style.display = 'flex';
+      
+      // Mostrar datos en caché inmediatamente si existen
+      if (state.channels.length > 0) {
+        renderResults();
+      }
+
       try {
-        if (!state.isOnline) return renderResults();
+        if (!state.isOnline) {
+          loadingIndicator.style.display = 'none';
+          renderResults();
+          return;
+        }
+        
         const proxy = 'https://corsproxy.io/?';
         const url = proxy + encodeURIComponent(`https://${state.baseDomain}/`);
         const res = await fetch(url);
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
+        
         const updateDateElement = doc.querySelector('h2[style*="background-color: #ff0000"]');
         if (updateDateElement) {
           const updateDateText = updateDateElement.textContent.trim();
@@ -1237,23 +1280,28 @@
             }, 500);
           }, 5000);
         }
+        
         const newChannels = [];
         let currentSport = 'General';
         const headings = Array.from(doc.querySelectorAll('h2, p'));
+        
         for (const el of headings) {
           if (el.tagName === 'H2') {
             currentSport = el.textContent.trim();
             continue;
           }
+          
           if (el.tagName === 'P') {
             const strongs = el.querySelectorAll('strong');
             strongs.forEach(strong => {
               const text = strong.childNodes[0]?.textContent?.trim();
               const timeMatch = text?.match(/^(\d{1,2}:\d{2})\s+(.+?)$/);
               const links = strong.querySelectorAll('a');
+              
               if (timeMatch && links.length) {
                 const time = timeMatch[1];
                 const event = timeMatch[2];
+                
                 links.forEach(link => {
                   const nameRaw = link.textContent.trim();
                   const numberMatch = nameRaw.match(/\(CH-(\d+)\)/);
@@ -1261,24 +1309,29 @@
                   const name = nameRaw.replace(/\s*\(CH-\d+\)/, '');
                   const url = new URL(link.getAttribute('href'), `https://${state.baseDomain}`).href;
                   const domainMatch = link.href.match(/https?:\/\/(daddylivehd[^\/]+)/i);
-                  if (domainMatch && domainMatch[1]) state.baseDomain = domainMatch[1];
+                  
+                  if (domainMatch && domainMatch[1]) {
+                    state.baseDomain = domainMatch[1];
+                  }
+                  
                   newChannels.push({ number, name, url, time, event, sport: currentSport });
                 });
               }
             });
           }
         }
+        
         if (newChannels.length > 0) {
           state.channels = newChannels;
           localStorage.setItem('channelsCache', JSON.stringify(newChannels));
         }
+        
         renderResults();
       } catch (err) {
         console.error('Error al cargar datos:', err);
-        if (state.channels.length > 0 || Object.keys(state.channelHistory).length > 0) {
-          renderResults();
-          document.getElementById('results').innerHTML += '<p style="color:red;">Mostrando datos en caché</p>';
-        } else document.getElementById('results').innerHTML = '<p>Error al cargar datos</p>';
+        renderResults();
+      } finally {
+        loadingIndicator.style.display = 'none';
       }
     }
 
@@ -1287,10 +1340,13 @@
       if (now - state.lastClearButtonClickTime > 1000) state.clearButtonClickCount = 0;
       state.clearButtonClickCount++;
       state.lastClearButtonClickTime = now;
+      
       if (state.clearButtonClickCount >= 3) {
         document.getElementById('settingsModal').classList.add('modal--active');
         state.clearButtonClickCount = 0;
-      } else clearEmojiFilters();
+      } else {
+        clearEmojiFilters();
+      }
     }
 
     function handleOnlineStatusChange() {
@@ -1328,6 +1384,13 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.toggle('dark-mode', state.darkMode);
+      
+      // Mostrar datos en caché inmediatamente si existen
+      if (state.channels.length > 0 || Object.keys(state.channelHistory).length > 0) {
+        renderResults();
+      }
+      
+      // Configurar event listeners
       document.getElementById('filterAll').addEventListener('click', () => applyFilter('all'));
       document.getElementById('filterLive').addEventListener('click', () => applyFilter('live'));
       document.getElementById('filterFavorites').addEventListener('click', () => applyFilter('favorites'));
@@ -1354,6 +1417,7 @@
       document.getElementById('groupChannelsToggle').checked = state.groupChannels;
       document.getElementById('sortByTimeToggle').addEventListener('change', toggleSortByTime);
       document.getElementById('sortByTimeToggle').checked = state.sortByTime;
+      
       if (state.stickyPlayer) {
         document.getElementById('playerSection').classList.add('player-section--sticky');
         document.getElementById('toggleStickyBtn').innerHTML = '⛉';
@@ -1362,13 +1426,18 @@
         document.getElementById('toggleStickyBtn').innerHTML = '⛊';
         document.getElementById('toggleStickyBtn').title = "Fijar reproductor";
       }
+      
       document.querySelectorAll('.color-option').forEach(btn => {
         btn.addEventListener('click', () => changePrimaryColor(btn.dataset.color));
       });
+      
       const savedColor = localStorage.getItem('primaryColor') || '#2563eb';
       changePrimaryColor(savedColor);
+      
       window.addEventListener('online', handleOnlineStatusChange);
       window.addEventListener('offline', handleOnlineStatusChange);
+      
+      // Iniciar scraping
       scrape();
     });
   </script>
