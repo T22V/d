@@ -164,7 +164,8 @@
     
     .channel-card:hover {
       transform: translateY(-3px);
-      border-color: var(--primary);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-color: var(--primary-light);
     }
     
     .channel-header {
@@ -570,7 +571,7 @@
     }
     
     .channel-card--favorite {
-      border: 1px solid var(--primary);
+      border: 2px solid var(--primary);
     }
     
     .loading-spinner {
@@ -834,7 +835,7 @@
       currentFilter: 'all',
       searchTerm: '',
       activeEmojiFilters: [],
-      favorites: JSON.parse(localStorage.getItem('favorites')) || {},
+      favorites: JSON.parse(localStorage.getItem('favorites')) || [],
       channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {},
       currentChannel: null,
       baseDomain: 'daddylive.online',
@@ -1009,9 +1010,8 @@
     }
 
     function updateChannelHistory(channel) {
-      const historyEntry = state.channelHistory[channel.number] || { names: [], isFavorite: false };
+      const historyEntry = state.channelHistory[channel.number] || { names: [] };
       if (!historyEntry.names.includes(channel.name)) historyEntry.names.push(channel.name);
-      historyEntry.isFavorite = state.favorites[channel.number] !== undefined;
       state.channelHistory[channel.number] = historyEntry;
       localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
     }
@@ -1023,7 +1023,7 @@
       document.getElementById('playerControls').classList.add('player-controls--active');
       document.getElementById('channelInfo').textContent = channel.name;
       document.getElementById('channelNumberDisplay').textContent = `CH-${channel.number}`;
-      document.getElementById('favoriteBtn').classList.toggle('control-btn--active', state.favorites[channel.number] !== undefined || (state.channelHistory[channel.number]?.isFavorite ?? false));
+      document.getElementById('favoriteBtn').classList.toggle('control-btn--active', state.favorites.includes(channel.number));
       if (state.isOnline) document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
     }
 
@@ -1081,18 +1081,15 @@
     }
 
     function saveFavorite() {
-      const favoriteName = document.getElementById('favoriteNameInput').value.trim();
-      if (!favoriteName) return alert('Por favor ingresa un nombre para el favorito');
       if (!state.currentChannel) return;
       const channelNumber = state.currentChannel.number;
-      state.favorites[channelNumber] = favoriteName;
-      localStorage.setItem('favorites', JSON.stringify(state.favorites));
-      if (state.channelHistory[channelNumber]) {
-        state.channelHistory[channelNumber].isFavorite = true;
-        state.channelHistory[channelNumber].customName = favoriteName;
-        localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
+      
+      if (!state.favorites.includes(channelNumber)) {
+        state.favorites.push(channelNumber);
+        localStorage.setItem('favorites', JSON.stringify(state.favorites));
+        document.getElementById('favoriteBtn').classList.add('control-btn--active');
       }
-      document.getElementById('favoriteBtn').classList.add('control-btn--active');
+      
       hideFavoriteModal();
       if (state.currentFilter === 'favorites') renderResults();
     }
@@ -1100,22 +1097,20 @@
     function removeFavorite() {
       if (!state.currentChannel) return;
       const channelNumber = state.currentChannel.number;
-      delete state.favorites[channelNumber];
+      state.favorites = state.favorites.filter(num => num !== channelNumber);
       localStorage.setItem('favorites', JSON.stringify(state.favorites));
-      if (state.channelHistory[channelNumber]) {
-        state.channelHistory[channelNumber].isFavorite = false;
-        delete state.channelHistory[channelNumber].customName;
-        localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
-      }
       document.getElementById('favoriteBtn').classList.remove('control-btn--active');
       if (state.currentFilter === 'favorites') renderResults();
     }
 
     function handleFavoriteClick() {
       if (!state.currentChannel) return;
-      const isFavorite = state.favorites[state.currentChannel.number] !== undefined || (state.channelHistory[state.currentChannel.number]?.isFavorite ?? false);
-      if (isFavorite) confirm('¿Quieres eliminar este canal de favoritos?') && removeFavorite();
-      else showFavoriteModal();
+      const isFavorite = state.favorites.includes(state.currentChannel.number);
+      if (isFavorite) {
+        removeFavorite();
+      } else {
+        showFavoriteModal();
+      }
     }
 
     function applyFilter(filter) {
@@ -1168,11 +1163,10 @@
     function filterHistoryChannels() {
       const historyChannels = Object.entries(state.channelHistory).map(([number, data]) => ({
         number,
-        name: data.customName || data.names[0] || `Canal ${number}`,
+        name: data.names[0] || `Canal ${number}`,
         time: '',
         event: '',
-        sport: '',
-        isFavorite: data.isFavorite || false
+        sport: ''
       }));
 
       if (!state.searchTerm) return historyChannels;
@@ -1193,7 +1187,7 @@
       }
 
       let filteredChannels = (state.isOnline ? state.channels : []).filter(channel => {
-        if (state.currentFilter === 'favorites' && !state.favorites[channel.number]) return false;
+        if (state.currentFilter === 'favorites' && !state.favorites.includes(channel.number)) return false;
         if (state.currentFilter === 'live' && !isChannelLive(channel)) return false;
         if (state.searchTerm) {
           const term = state.searchTerm.toLowerCase();
@@ -1329,16 +1323,15 @@
     }
 
     function createChannelCard(channel) {
-      const isFavorite = state.favorites[channel.number] !== undefined || (state.channelHistory[channel.number]?.isFavorite ?? false);
+      const isFavorite = state.favorites.includes(channel.number);
       const isLive = isChannelLive(channel);
       const adjustedTime = adjustTime(channel.time);
-      const displayName = state.channelHistory[channel.number]?.customName || channel.name;
       
       return `
         <div class="channel-card ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
           <div class="channel-header">
             ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-time">${adjustedTime}</div>` : ''}
-            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${displayName}</div>
+            <div class="channel-name ${isLive && state.currentFilter !== 'history' ? 'channel-name--live' : ''}">${channel.name}</div>
             <div class="channel-number">${channel.number}</div>
           </div>
           ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-event">${channel.event}</div>` : ''}
@@ -1363,7 +1356,7 @@
           if (state.channelHistory[channelNumber]) {
             playChannel({
               number: channelNumber,
-              name: state.channelHistory[channelNumber].customName || state.channelHistory[channelNumber].names[0],
+              name: state.channelHistory[channelNumber].names[0],
               time: '',
               event: '',
               sport: ''
