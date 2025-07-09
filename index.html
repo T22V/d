@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
-  <title>📺</title>
+  <title>📺 DaddyLiveHD</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -624,6 +624,36 @@
       opacity: 0.7;
     }
     
+    .fecha-container {
+      background: var(--card-bg);
+      padding: 15px;
+      border-radius: var(--radius-md);
+      margin: 20px auto;
+      max-width: 600px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .fecha-titulo {
+      font-size: 14px;
+      color: var(--text);
+      opacity: 0.7;
+      margin-bottom: 5px;
+    }
+    
+    .fecha-valor {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    
+    .debug-info {
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0.5;
+      margin-top: 5px;
+    }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -700,6 +730,13 @@
         <span class="channel-number-display" id="channelNumberDisplay"></span>
       </div>
     </div>
+    
+    <div class="fecha-container">
+      <div class="fecha-titulo">PROGRAMACIÓN ACTUALIZADA PARA:</div>
+      <div id="fecha" class="fecha-valor">Presiona "Cargar canales" para ver la fecha</div>
+      <div id="fecha-debug" class="debug-info"></div>
+    </div>
+    
     <div class="search-filters">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Buscar canales, número (ej: #123) o hora (ej: 15:30)">
@@ -838,7 +875,7 @@
       favorites: JSON.parse(localStorage.getItem('favorites')) || [],
       channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {},
       currentChannel: null,
-      baseDomain: 'daddylive.online',
+      baseDomain: 'daddylivehd1.my',
       clearButtonClickCount: 0,
       lastClearButtonClickTime: 0,
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
@@ -907,7 +944,7 @@
     function adjustTime(time) {
       if (!time || time === 'LIVE') return time;
       const [hours, minutes] = time.split(':').map(Number);
-      const adjustedHours = hours % 24;
+      const adjustedHours = (hours + 1) % 24; // Añadir 1 hora para ajustar a España
       return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
@@ -997,7 +1034,7 @@
       const currentTimeInMinutes = currentHours * 60 + currentMinutes;
       
       const [eventHours, eventMinutes] = channel.time.split(':').map(Number);
-      const adjustedEventHours = eventHours % 24;
+      const adjustedEventHours = (eventHours + 1) % 24; // Añadir 1 hora para ajustar a España
       const eventTimeInMinutes = adjustedEventHours * 60 + eventMinutes;
       
       const duration = getEventDuration(channel);
@@ -1254,8 +1291,8 @@
           const timeA = a.time ? a.time.split(':').map(Number) : [23, 59];
           const timeB = b.time ? b.time.split(':').map(Number) : [23, 59];
           
-          const adjustedHoursA = timeA[0] % 24;
-          const adjustedHoursB = timeB[0] % 24;
+          const adjustedHoursA = (timeA[0] + 1) % 24; // Añadir 1 hora para ajustar a España
+          const adjustedHoursB = (timeB[0] + 1) % 24; // Añadir 1 hora para ajustar a España
           
           if (adjustedHoursA !== adjustedHoursB) return adjustedHoursA - adjustedHoursB;
           return timeA[1] - timeB[1];
@@ -1392,67 +1429,99 @@
           return;
         }
         
-        const proxy = 'https://corsproxy.io/?';
-        const url = proxy + encodeURIComponent(`https://${state.baseDomain}/`);
-        const res = await fetch(url);
-        const html = await res.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://daddylivehd1.my/");
+        const response = await fetch(proxyUrl);
         
-        const updateDateElement = doc.querySelector('h2[style*="background-color: #ff0000"]');
-        if (updateDateElement) {
-          const updateDateText = updateDateElement.textContent.trim();
-          const translatedDate = translateDate(updateDateText);
-          const notification = document.getElementById('updateNotification');
-          notification.textContent = `Actualizado: ${translatedDate}`;
-          notification.classList.add('update-notification--show');
-          setTimeout(() => {
-            notification.classList.remove('update-notification--show');
-            setTimeout(() => {
-              notification.textContent = '';
-            }, 500);
-          }, 5000);
-        }
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         
-        const newChannels = [];
-        let currentSport = 'General';
-        const headings = Array.from(doc.querySelectorAll('h2, p'));
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
         
-        for (const el of headings) {
-          if (el.tagName === 'H2') {
-            currentSport = el.textContent.trim();
-            continue;
+        // Extracción de la fecha
+        const fechaElements = doc.querySelectorAll("h2 strong");
+        let fechaExtraida = "";
+        const debugDiv = document.getElementById("fecha-debug");
+        const fechaDiv = document.getElementById("fecha");
+        
+        for (const element of fechaElements) {
+          const texto = element.textContent.trim();
+          debugDiv.textContent += `Texto analizado: "${texto}"\n`;
+          
+          const patrones = [
+            /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4})/,  // Wednesday 09th July 2025
+            /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,          // 09/07/2025 o 09-07-25
+            /(\d{1,2} [A-Za-z]+ \d{4})/,                    // 09 July 2025
+            /([A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4})/          // Wednesday, 09 July 2025
+          ];
+          
+          for (const patron of patrones) {
+            const match = texto.match(patron);
+            if (match) {
+              fechaExtraida = match[0];
+              break;
+            }
           }
           
-          if (el.tagName === 'P') {
-            const strongs = el.querySelectorAll('strong');
-            strongs.forEach(strong => {
-              const text = strong.childNodes[0]?.textContent?.trim();
-              const timeMatch = text?.match(/^(\d{1,2}:\d{2})\s+(.+?)$/);
-              const links = strong.querySelectorAll('a');
-              
-              if (timeMatch && links.length) {
-                const time = timeMatch[1];
-                const event = timeMatch[2];
-                
-                links.forEach(link => {
-                  const nameRaw = link.textContent.trim();
-                  const numberMatch = nameRaw.match(/\(CH-(\d+)\)/);
-                  const number = numberMatch ? numberMatch[1] : '';
-                  const name = nameRaw.replace(/\s*\(CH-\d+\)/, '');
-                  const url = new URL(link.getAttribute('href'), `https://${state.baseDomain}`).href;
-                  const domainMatch = link.href.match(/https?:\/\/(daddylive[^\/]+)/i);
-                  
-                  if (domainMatch && domainMatch[1]) {
-                    state.baseDomain = domainMatch[1];
-                  }
-                  
-                  newChannels.push({ number, name, url, time, event, sport: currentSport });
-                });
-              }
-            });
-          }
+          if (fechaExtraida) break;
         }
         
+        if (fechaExtraida) {
+          fechaDiv.textContent = translateDate(fechaExtraida);
+          debugDiv.textContent += `\nFecha detectada: ${fechaExtraida}`;
+        } else {
+          fechaDiv.textContent = "Fecha no reconocida (ver consola)";
+          debugDiv.textContent += "\nNo se pudo identificar un formato de fecha válido";
+          console.warn("No se pudo extraer la fecha. Elementos analizados:", fechaElements);
+        }
+
+        // Procesamiento de canales
+        const newChannels = [];
+        let currentCategory = "";
+        const strongs = doc.querySelectorAll("strong");
+
+        strongs.forEach(strong => {
+          if (strong.parentElement.tagName === 'H2') {
+            currentCategory = strong.textContent.trim();
+            return;
+          }
+
+          const horaMatch = strong.textContent.match(/^(\d{1,2}:\d{2})/);
+          const hora = horaMatch ? horaMatch[1] : "??:??";
+
+          const links = strong.querySelectorAll("a[href*='stream']");
+          if (links.length === 0) return;
+
+          const eventoLimpio = strong.cloneNode(true);
+          eventoLimpio.querySelectorAll("a").forEach(a => a.remove());
+          let nombreEvento = eventoLimpio.textContent
+            .replace(/\s+/g, " ")
+            .trim()
+            .replace(/^(\d{1,2}:\d{2})/, '')
+            .trim()
+            .replace(/\|+/g, '')
+            .trim();
+
+          links.forEach(link => {
+            const canalTexto = link.textContent.trim();
+            const canalMatch = canalTexto.match(/(.+?)\s*\(CH-(\d+)\)/i);
+            if (canalMatch) {
+              const nombreCanal = canalMatch[1].trim();
+              const numero = canalMatch[2];
+              const url = link.href.startsWith("http") ? link.href : "https://daddylivehd1.my" + link.getAttribute("href");
+
+              newChannels.push({ 
+                number: numero, 
+                name: nombreCanal, 
+                url, 
+                time: hora, 
+                event: nombreEvento, 
+                sport: currentCategory 
+              });
+            }
+          });
+        });
+
         if (newChannels.length > 0) {
           state.channels = newChannels;
           localStorage.setItem('channelsCache', JSON.stringify(newChannels));
