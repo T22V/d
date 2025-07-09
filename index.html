@@ -907,8 +907,7 @@
     function adjustTime(time) {
       if (!time || time === 'LIVE') return time;
       const [hours, minutes] = time.split(':').map(Number);
-      let adjustedHours = (hours + 1) % 24;
-      if (adjustedHours < 6) adjustedHours += 24;
+      const adjustedHours = hours % 24;
       return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
@@ -998,7 +997,8 @@
       const currentTimeInMinutes = currentHours * 60 + currentMinutes;
       
       const [eventHours, eventMinutes] = channel.time.split(':').map(Number);
-      const eventTimeInMinutes = eventHours * 60 + eventMinutes;
+      const adjustedEventHours = eventHours % 24;
+      const eventTimeInMinutes = adjustedEventHours * 60 + eventMinutes;
       
       const duration = getEventDuration(channel);
       const margin = 15;
@@ -1254,8 +1254,8 @@
           const timeA = a.time ? a.time.split(':').map(Number) : [23, 59];
           const timeB = b.time ? b.time.split(':').map(Number) : [23, 59];
           
-          const adjustedHoursA = timeA[0] < 6 ? timeA[0] + 24 : timeA[0];
-          const adjustedHoursB = timeB[0] < 6 ? timeB[0] + 24 : timeB[0];
+          const adjustedHoursA = timeA[0] % 24;
+          const adjustedHoursB = timeB[0] % 24;
           
           if (adjustedHoursA !== adjustedHoursB) return adjustedHoursA - adjustedHoursB;
           return timeA[1] - timeB[1];
