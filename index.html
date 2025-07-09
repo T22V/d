@@ -576,13 +576,13 @@
     
     .loading-spinner {
       display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 0, 0, 0.1);
       border-radius: 50%;
       border-top-color: var(--primary);
       animation: spin 1s ease-in-out infinite;
-      margin: 20px auto;
+      margin-left: 10px;
     }
     
     .loading-container {
@@ -631,6 +631,10 @@
       margin-bottom: 1rem;
       text-align: center;
       box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
     }
     
     .fecha-titulo {
@@ -754,15 +758,13 @@
       </div>
     </div>
     
-    <div class="fecha-container">
+    <div class="fecha-container" id="fechaContainer">
       <div id="fecha" class="fecha-valor"></div>
+      <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
     </div>
     
     <div id="offlineMessage" class="offline-message" style="display: none;">Modo offline: mostrando canales del historial</div>
     <div id="updateNotification" class="update-notification"></div>
-    <div id="loadingIndicator" class="loading-container" style="display: none;">
-      <div class="loading-spinner"></div>
-    </div>
     <div class="channels-grid" id="results"></div>
   </div>
   <div class="modal" id="settingsModal">
@@ -942,7 +944,7 @@
     function adjustTime(time) {
       if (!time || time === 'LIVE') return time;
       const [hours, minutes] = time.split(':').map(Number);
-      const adjustedHours = (hours + 1) % 24; // Añadir 1 hora para ajustar a España
+      const adjustedHours = (hours + 1) % 24;
       return `${String(adjustedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
@@ -1032,7 +1034,7 @@
       const currentTimeInMinutes = currentHours * 60 + currentMinutes;
       
       const [eventHours, eventMinutes] = channel.time.split(':').map(Number);
-      const adjustedEventHours = (eventHours + 1) % 24; // Añadir 1 hora para ajustar a España
+      const adjustedEventHours = (eventHours + 1) % 24;
       const eventTimeInMinutes = adjustedEventHours * 60 + eventMinutes;
       
       const duration = getEventDuration(channel);
@@ -1289,8 +1291,8 @@
           const timeA = a.time ? a.time.split(':').map(Number) : [23, 59];
           const timeB = b.time ? b.time.split(':').map(Number) : [23, 59];
           
-          const adjustedHoursA = (timeA[0] + 1) % 24; // Añadir 1 hora para ajustar a España
-          const adjustedHoursB = (timeB[0] + 1) % 24; // Añadir 1 hora para ajustar a España
+          const adjustedHoursA = (timeA[0] + 18) % 24;
+          const adjustedHoursB = (timeB[0] + 18) % 24;
           
           if (adjustedHoursA !== adjustedHoursB) return adjustedHoursA - adjustedHoursB;
           return timeA[1] - timeB[1];
@@ -1413,8 +1415,8 @@
     }
 
     async function scrape() {
-      const loadingIndicator = document.getElementById('loadingIndicator');
-      loadingIndicator.style.display = 'flex';
+      document.getElementById('loadingSpinner').style.display = 'inline-block';
+      document.getElementById('fecha').textContent = 'Cargando...';
       
       if (state.channels.length > 0) {
         renderResults();
@@ -1422,7 +1424,7 @@
 
       try {
         if (!state.isOnline) {
-          loadingIndicator.style.display = 'none';
+          document.getElementById('loadingSpinner').style.display = 'none';
           renderResults();
           return;
         }
@@ -1436,7 +1438,6 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
         
-        // Extracción de la fecha
         const fechaElements = doc.querySelectorAll("h2 strong");
         let fechaExtraida = "";
         const fechaDiv = document.getElementById("fecha");
@@ -1445,10 +1446,10 @@
           const texto = element.textContent.trim();
           
           const patrones = [
-            /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4})/,  // Wednesday 09th July 2025
-            /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,          // 09/07/2025 o 09-07-25
-            /(\d{1,2} [A-Za-z]+ \d{4})/,                    // 09 July 2025
-            /([A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4})/          // Wednesday, 09 July 2025
+            /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4})/,
+            /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
+            /(\d{1,2} [A-Za-z]+ \d{4})/,
+            /([A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4})/
           ];
           
           for (const patron of patrones) {
@@ -1468,7 +1469,6 @@
           fechaDiv.textContent = "Fecha no reconocida";
         }
 
-        // Procesamiento de canales
         const newChannels = [];
         let currentCategory = "";
         const strongs = doc.querySelectorAll("strong");
@@ -1525,7 +1525,7 @@
         console.error('Error al cargar datos:', err);
         renderResults();
       } finally {
-        loadingIndicator.style.display = 'none';
+        document.getElementById('loadingSpinner').style.display = 'none';
       }
     }
 
