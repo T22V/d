@@ -732,9 +732,7 @@
     </div>
     
     <div class="fecha-container">
-      <div class="fecha-titulo">PROGRAMACIÓN ACTUALIZADA PARA:</div>
       <div id="fecha" class="fecha-valor">Presiona "Cargar canales" para ver la fecha</div>
-      <div id="fecha-debug" class="debug-info"></div>
     </div>
     
     <div class="search-filters">
@@ -1441,12 +1439,10 @@
         // Extracción de la fecha
         const fechaElements = doc.querySelectorAll("h2 strong");
         let fechaExtraida = "";
-        const debugDiv = document.getElementById("fecha-debug");
         const fechaDiv = document.getElementById("fecha");
         
         for (const element of fechaElements) {
           const texto = element.textContent.trim();
-          debugDiv.textContent += `Texto analizado: "${texto}"\n`;
           
           const patrones = [
             /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4})/,  // Wednesday 09th July 2025
@@ -1468,11 +1464,8 @@
         
         if (fechaExtraida) {
           fechaDiv.textContent = translateDate(fechaExtraida);
-          debugDiv.textContent += `\nFecha detectada: ${fechaExtraida}`;
         } else {
-          fechaDiv.textContent = "Fecha no reconocida (ver consola)";
-          debugDiv.textContent += "\nNo se pudo identificar un formato de fecha válido";
-          console.warn("No se pudo extraer la fecha. Elementos analizados:", fechaElements);
+          fechaDiv.textContent = "Fecha no reconocida";
         }
 
         // Procesamiento de canales
