@@ -1440,24 +1440,26 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
         
-        const fechaElements = doc.querySelectorAll("h2 strong");
+        // Buscar la fecha en los elementos h2
+        const fechaElements = doc.querySelectorAll("h2");
         let fechaExtraida = "";
-        const fechaDiv = document.getElementById("fecha");
         
         for (const element of fechaElements) {
           const texto = element.textContent.trim();
           
+          // Patrones para detectar diferentes formatos de fecha
           const patrones = [
             /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4})/,
             /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
             /(\d{1,2} [A-Za-z]+ \d{4})/,
-            /([A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4})/
+            /([A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4})/,
+            /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4} – Schedule Time UK GMT)/
           ];
           
           for (const patron of patrones) {
             const match = texto.match(patron);
             if (match) {
-              fechaExtraida = match[0];
+              fechaExtraida = match[0].replace(' – Schedule Time UK GMT', '');
               break;
             }
           }
@@ -1466,9 +1468,9 @@
         }
         
         if (fechaExtraida) {
-          fechaDiv.textContent = translateDate(fechaExtraida);
+          document.getElementById('fecha').textContent = translateDate(fechaExtraida);
         } else {
-          fechaDiv.textContent = "Fecha no reconocida";
+          document.getElementById('fecha').textContent = "Fecha no reconocida";
         }
 
         const newChannels = [];
