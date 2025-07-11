@@ -1520,6 +1520,11 @@
         if (newChannels.length > 0) {
           state.channels = newChannels;
           localStorage.setItem('channelsCache', JSON.stringify(newChannels));
+          
+          // Añadir automáticamente todos los canales al historial
+          newChannels.forEach(channel => {
+            updateChannelHistory(channel);
+          });
         }
         
         renderResults();
