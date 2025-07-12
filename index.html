@@ -23,7 +23,7 @@
       --bg-light: #131313;
       --card-bg: #333436;
       --text: #f8fafc;
-      --border-color: #334155;
+      --border-color: #555555;
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
       --primary-light: rgba(var(--primary-rgb), 0.2);
     }
@@ -1048,33 +1048,79 @@
       return currentTimeInMinutes >= startTime && currentTimeInMinutes <= endTime;
     }
 
-    function updateChannelHistory(channel) {
-      const historyEntry = state.channelHistory[channel.number] || { names: [] };
-      if (!historyEntry.names.includes(channel.name)) historyEntry.names.push(channel.name);
-      state.channelHistory[channel.number] = historyEntry;
+    function syncChannelHistory() {
+      const currentChannelsMap = {};
+      state.channels.forEach(channel => {
+        currentChannelsMap[channel.number] = {
+          name: channel.name,
+          event: channel.event || '',
+          sport: channel.sport || ''
+        };
+      });
+
+      Object.keys(currentChannelsMap).forEach(number => {
+        if (!state.channelHistory[number]) {
+          state.channelHistory[number] = {
+            names: [currentChannelsMap[number].name],
+            event: currentChannelsMap[number].event,
+            sport: currentChannelsMap[number].sport,
+            lastUpdated: new Date().toISOString()
+          };
+        } else {
+          const historyEntry = state.channelHistory[number];
+          const currentName = currentChannelsMap[number].name;
+          
+          if (historyEntry.names[0] !== currentName) {
+            historyEntry.names.unshift(currentName);
+            historyEntry.names = historyEntry.names.slice(0, 3);
+          }
+          
+          if (currentChannelsMap[number].event) historyEntry.event = currentChannelsMap[number].event;
+          if (currentChannelsMap[number].sport) historyEntry.sport = currentChannelsMap[number].sport;
+          historyEntry.lastUpdated = new Date().toISOString();
+        }
+      });
+
       localStorage.setItem('channelHistory', JSON.stringify(state.channelHistory));
     }
 
     function playChannel(channel) {
       state.currentChannel = channel;
-      updateChannelHistory(channel);
+      
+      // Actualizar historial al reproducir
+      if (!state.channelHistory[channel.number] || 
+          state.channelHistory[channel.number].names[0] !== channel.name) {
+        syncChannelHistory();
+      }
+      
       document.getElementById('playerContainer').classList.add('player-container--active');
       document.getElementById('playerControls').classList.add('player-controls--active');
       document.getElementById('channelInfo').textContent = channel.name;
       document.getElementById('channelNumberDisplay').textContent = `CH-${channel.number}`;
       document.getElementById('favoriteBtn').classList.toggle('control-btn--active', state.favorites.includes(channel.number));
-      if (state.isOnline) document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
+      
+      if (state.isOnline) {
+        document.getElementById('videoFrame').src = `https://${state.baseDomain}/embed/stream-${channel.number}.php`;
+      }
     }
 
     function playChannelByNumber(number) {
-      const channel = {
-        number: number,
-        name: `Canal ${number}`,
-        time: '',
-        event: '',
-        sport: ''
-      };
-      playChannel(channel);
+      const channelNumber = String(number);
+      const existingChannel = state.channels.find(c => c.number === channelNumber);
+      
+      if (existingChannel) {
+        playChannel(existingChannel);
+      } else {
+        const historyEntry = state.channelHistory[channelNumber];
+        const channel = {
+          number: channelNumber,
+          name: historyEntry?.names?.[0] || `Canal ${channelNumber}`,
+          time: '',
+          event: historyEntry?.event || '',
+          sport: historyEntry?.sport || ''
+        };
+        playChannel(channel);
+      }
     }
 
     function closePlayer() {
@@ -1200,23 +1246,15 @@
     }
 
     function filterHistoryChannels() {
-      const historyChannels = Object.entries(state.channelHistory).map(([number, data]) => ({
-        number,
-        name: data.names[0] || `Canal ${number}`,
-        time: '',
-        event: '',
-        sport: ''
-      }));
-
-      if (!state.searchTerm) return historyChannels;
-
-      const term = state.searchTerm.toLowerCase().trim();
-
-      return historyChannels.filter(channel => {
-        if (/^#?\d+$/.test(term)) {
-          return channel.number === term.replace('#', '');
-        }
-        return channel.name.toLowerCase().includes(term);
+      return Object.entries(state.channelHistory).map(([number, data]) => {
+        const currentChannel = state.channels.find(c => c.number === number);
+        return {
+          number,
+          name: currentChannel?.name || data.names[0] || `Canal ${number}`,
+          time: currentChannel?.time || '',
+          event: currentChannel?.event || data.event || '',
+          sport: currentChannel?.sport || data.sport || ''
+        };
       });
     }
 
@@ -1521,10 +1559,8 @@
           state.channels = newChannels;
           localStorage.setItem('channelsCache', JSON.stringify(newChannels));
           
-          // Añadir automáticamente todos los canales al historial
-          newChannels.forEach(channel => {
-            updateChannelHistory(channel);
-          });
+          // Sincronizar el historial con los nuevos canales
+          syncChannelHistory();
         }
         
         renderResults();
