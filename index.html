@@ -1026,8 +1026,66 @@
       return 120;
     }
 
+    function getEventIdentifier(channel) {
+      return `${channel.time}|${channel.event}|${channel.sport}`;
+    }
+
+    function findConflictedEvents() {
+      const eventGroups = {};
+      const channelToEventsMap = {};
+      
+      state.channels.forEach(channel => {
+        const eventId = getEventIdentifier(channel);
+        
+        if (!eventGroups[eventId]) {
+          eventGroups[eventId] = {
+            channels: [],
+            time: channel.time === 'LIVE' ? '9999:99' : channel.time,
+            isLive: false
+          };
+        }
+        eventGroups[eventId].channels.push(channel);
+        
+        if (!channelToEventsMap[channel.number]) {
+          channelToEventsMap[channel.number] = [];
+        }
+        channelToEventsMap[channel.number].push(eventId);
+      });
+      
+      const conflictedEvents = new Set();
+      
+      Object.entries(eventGroups).forEach(([eventId, eventData]) => {
+        eventData.channels.forEach(channel => {
+          const allEventsForThisChannel = channelToEventsMap[channel.number] || [];
+          
+          const hasNewerEvent = allEventsForThisChannel.some(otherEventId => {
+            if (otherEventId === eventId) return false;
+            
+            const otherEvent = eventGroups[otherEventId];
+            return otherEvent.time > eventData.time;
+          });
+          
+          if (hasNewerEvent) {
+            conflictedEvents.add(eventId);
+          }
+        });
+      });
+      
+      return conflictedEvents;
+    }
+
     function isChannelLive(channel) {
       if (state.currentFilter === 'history') return false;
+      
+      if (!state._conflictedEvents) {
+        state._conflictedEvents = findConflictedEvents();
+      }
+      
+      const currentEventKey = getEventIdentifier(channel);
+      if (state._conflictedEvents.has(currentEventKey)) {
+        return false;
+      }
+
       if (!channel.time || channel.time === 'LIVE') return true;
       
       const now = new Date();
@@ -1087,7 +1145,6 @@
     function playChannel(channel) {
       state.currentChannel = channel;
       
-      // Actualizar historial al reproducir
       if (!state.channelHistory[channel.number] || 
           state.channelHistory[channel.number].names[0] !== channel.name) {
         syncChannelHistory();
@@ -1322,8 +1379,15 @@
         return true;
       });
 
-      if (state.currentFilter === 'live' || (state.sortByTime && state.currentFilter === 'all')) {
-        filteredChannels.sort((a, b) => {
+      // Ordenar canales favoritos primero en su grupo de eventos
+      filteredChannels.sort((a, b) => {
+        const aIsFavorite = state.favorites.includes(a.number);
+        const bIsFavorite = state.favorites.includes(b.number);
+        
+        if (aIsFavorite && !bIsFavorite) return -1;
+        if (!aIsFavorite && bIsFavorite) return 1;
+        
+        if (state.currentFilter === 'live' || (state.sortByTime && state.currentFilter === 'all')) {
           if (a.time === 'LIVE' && b.time !== 'LIVE') return -1;
           if (a.time !== 'LIVE' && b.time === 'LIVE') return 1;
           if (a.time === 'LIVE' && b.time === 'LIVE') return 0;
@@ -1336,13 +1400,16 @@
           
           if (adjustedHoursA !== adjustedHoursB) return adjustedHoursA - adjustedHoursB;
           return timeA[1] - timeB[1];
-        });
-      }
+        }
+        
+        return 0;
+      });
 
       return filteredChannels;
     }
 
     function renderResults() {
+      delete state._conflictedEvents; // Reset cache de eventos conflictivos
       const filteredChannels = filterChannels();
       const resultsDiv = document.getElementById('results');
       document.getElementById('offlineMessage').style.display = state.isOnline ? 'none' : 'block';
@@ -1558,8 +1625,6 @@
         if (newChannels.length > 0) {
           state.channels = newChannels;
           localStorage.setItem('channelsCache', JSON.stringify(newChannels));
-          
-          // Sincronizar el historial con los nuevos canales
           syncChannelHistory();
         }
         
