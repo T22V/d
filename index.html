@@ -1456,7 +1456,7 @@
               ${state.currentFilter !== 'history' ? `<span class="channel-time ${time === 'LIVE' ? 'channel-time--live' : ''}">${time}</span>` : `<span class="channel-time">${time}</span>`}
               ${event}
             </div>
-            <div class="channel-group__sport">${translateSport(sport)}</div>
+            <div class="channel-group__sport">${translateSport(sport.replace(/\(\d+\)/g, '').trim())}</div>
           </div>
           <div class="channel-group__content ${groupChannels.length === 1 ? 'channel-group__content--single' : ''}">
             ${groupChannels.map(channel => createChannelCard(channel)).join('')}
@@ -1470,6 +1470,7 @@
       const isFavorite = state.favorites.includes(channel.number);
       const isLive = isChannelLive(channel);
       const adjustedTime = adjustTime(channel.time);
+      const cleanSport = channel.sport.replace(/\(\d+\)/g, '').trim();
       
       return `
         <div class="channel-card ${isFavorite ? 'channel-card--favorite' : ''}" onclick="playChannel(${JSON.stringify(channel).replace(/"/g, '&quot;')})">
@@ -1479,7 +1480,7 @@
             <div class="channel-number">${channel.number}</div>
           </div>
           ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-event">${channel.event}</div>` : ''}
-          ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-sport">${translateSport(channel.sport)}</div>` : ''}
+          ${!state.groupChannels || state.currentFilter === 'history' ? `<div class="channel-sport">${translateSport(cleanSport)}</div>` : ''}
         </div>
       `;
     }
@@ -1567,7 +1568,7 @@
         const categories = doc.querySelectorAll(".match-category");
 
         categories.forEach(category => {
-          const categoryTitle = category.querySelector(".category-title")?.textContent.trim() || "Sin categoría";
+          const categoryTitle = category.querySelector(".category-title")?.textContent.trim().replace(/\(\d+\)/g, '').trim() || "Sin categoría";
           const matchSections = category.querySelectorAll(".match-section");
 
           matchSections.forEach(section => {
