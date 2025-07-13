@@ -875,7 +875,7 @@
       favorites: JSON.parse(localStorage.getItem('favorites')) || [],
       channelHistory: JSON.parse(localStorage.getItem('channelHistory')) || {},
       currentChannel: null,
-      baseDomain: 'daddylivehd1.my',
+      baseDomain: 'daddylive.online',
       clearButtonClickCount: 0,
       lastClearButtonClickTime: 0,
       internationalFilter: localStorage.getItem('internationalFilter') === 'true',
@@ -1536,7 +1536,7 @@
           return;
         }
         
-        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://daddylivehd1.my/");
+        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://daddylive.online/");
         const response = await fetch(proxyUrl);
         
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
@@ -1545,29 +1545,16 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
         
-        const fechaElements = doc.querySelectorAll("h2");
+        // Extraer fecha del elemento daddy-schedule-title
+        const scheduleTitle = doc.querySelector(".daddy-schedule-title");
         let fechaExtraida = "";
         
-        for (const element of fechaElements) {
-          const texto = element.textContent.trim();
-          
-          const patrones = [
-            /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4})/,
-            /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
-            /(\d{1,2} [A-Za-z]+ \d{4})/,
-            /([A-Za-z]+, \d{1,2} [A-Za-z]+ \d{4})/,
-            /([A-Za-z]+ \d{1,2}[a-z]{2} [A-Za-z]+ \d{4} – Schedule Time UK GMT)/
-          ];
-          
-          for (const patron of patrones) {
-            const match = texto.match(patron);
-            if (match) {
-              fechaExtraida = match[0].replace(' – Schedule Time UK GMT', '');
-              break;
-            }
+        if (scheduleTitle) {
+          const titleText = scheduleTitle.textContent;
+          const dateMatch = titleText.match(/([A-Za-z]+ \d{1,2} [A-Za-z]+ \d{4})/);
+          if (dateMatch) {
+            fechaExtraida = dateMatch[0];
           }
-          
-          if (fechaExtraida) break;
         }
         
         if (fechaExtraida) {
@@ -1577,48 +1564,43 @@
         }
 
         const newChannels = [];
-        let currentCategory = "";
-        const strongs = doc.querySelectorAll("strong");
+        const categories = doc.querySelectorAll(".match-category");
 
-        strongs.forEach(strong => {
-          if (strong.parentElement.tagName === 'H2') {
-            currentCategory = strong.textContent.trim();
-            return;
-          }
+        categories.forEach(category => {
+          const categoryTitle = category.querySelector(".category-title")?.textContent.trim() || "Sin categoría";
+          const matchSections = category.querySelectorAll(".match-section");
 
-          const horaMatch = strong.textContent.match(/^(\d{1,2}:\d{2})/);
-          const hora = horaMatch ? horaMatch[1] : "??:??";
+          matchSections.forEach(section => {
+            const timeElement = section.querySelector(".time");
+            const matchNameElement = section.querySelector(".match-name");
+            const linksContainer = section.querySelector(".links");
+            
+            if (!timeElement || !matchNameElement || !linksContainer) return;
+            
+            const time = timeElement.textContent.split(' ')[0].trim();
+            const matchName = matchNameElement.textContent.trim();
+            const links = linksContainer.querySelectorAll(".link-button");
+            
+            if (links.length === 0) return;
+            
+            links.forEach(link => {
+              const canalTexto = link.textContent.trim();
+              const canalMatch = canalTexto.match(/(.+?)\s*\(CH-(\d+)\)/i);
+              if (canalMatch) {
+                const nombreCanal = canalMatch[1].trim();
+                const numero = canalMatch[2];
+                const url = link.href.startsWith("http") ? link.href : "https://daddylive.online" + link.getAttribute("href");
 
-          const links = strong.querySelectorAll("a[href*='stream']");
-          if (links.length === 0) return;
-
-          const eventoLimpio = strong.cloneNode(true);
-          eventoLimpio.querySelectorAll("a").forEach(a => a.remove());
-          let nombreEvento = eventoLimpio.textContent
-            .replace(/\s+/g, " ")
-            .trim()
-            .replace(/^(\d{1,2}:\d{2})/, '')
-            .trim()
-            .replace(/\|+/g, '')
-            .trim();
-
-          links.forEach(link => {
-            const canalTexto = link.textContent.trim();
-            const canalMatch = canalTexto.match(/(.+?)\s*\(CH-(\d+)\)/i);
-            if (canalMatch) {
-              const nombreCanal = canalMatch[1].trim();
-              const numero = canalMatch[2];
-              const url = link.href.startsWith("http") ? link.href : "https://daddylivehd1.my" + link.getAttribute("href");
-
-              newChannels.push({ 
-                number: numero, 
-                name: nombreCanal, 
-                url, 
-                time: hora, 
-                event: nombreEvento, 
-                sport: currentCategory 
-              });
-            }
+                newChannels.push({ 
+                  number: numero, 
+                  name: nombreCanal, 
+                  url, 
+                  time: time, 
+                  event: matchName, 
+                  sport: categoryTitle 
+                });
+              }
+            });
           });
         });
 
