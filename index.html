@@ -910,14 +910,14 @@
     };
 
     const dayTranslations = {
-      'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles', 'Thursday': 'Jueves',
-      'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+      'Mon': 'Lunes', 'Tue': 'Martes', 'Wed': 'Miércoles', 'Thu': 'Jueves',
+      'Fri': 'Viernes', 'Sat': 'Sábado', 'Sun': 'Domingo'
     };
 
     const monthTranslations = {
-      'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
-      'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
-      'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+      'Jan': 'Enero', 'Feb': 'Febrero', 'Mar': 'Marzo', 'Apr': 'Abril',
+      'May': 'Mayo', 'Jun': 'Junio', 'Jul': 'Julio', 'Aug': 'Agosto',
+      'Sep': 'Septiembre', 'Oct': 'Octubre', 'Nov': 'Noviembre', 'Dec': 'Diciembre'
     };
 
     function toggleDarkMode() {
@@ -1543,19 +1543,13 @@
         if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         
         const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
         
-        // Extraer fecha del elemento daddy-schedule-title
-        const scheduleTitle = doc.querySelector(".daddy-schedule-title");
+        // Extraer fecha del comentario HTML
+        const dateMatch = html.match(/<!-- Last modified: (\w+), (\d+) (\w+) (\d+) (\d+:\d+:\d+) GMT -->/);
         let fechaExtraida = "";
         
-        if (scheduleTitle) {
-          const titleText = scheduleTitle.textContent;
-          const dateMatch = titleText.match(/([A-Za-z]+ \d{1,2} [A-Za-z]+ \d{4})/);
-          if (dateMatch) {
-            fechaExtraida = dateMatch[0];
-          }
+        if (dateMatch) {
+          fechaExtraida = `${dateMatch[1]} ${dateMatch[2]} ${dateMatch[3]} ${dateMatch[4]}`;
         }
         
         if (fechaExtraida) {
@@ -1564,6 +1558,9 @@
           document.getElementById('fecha').textContent = "Fecha no reconocida";
         }
 
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        
         const newChannels = [];
         const categories = doc.querySelectorAll(".match-category");
 
